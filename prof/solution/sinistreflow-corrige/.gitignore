@@ -1,0 +1,12 @@
+node_modules/
+npm-debug.log
+.DS_Store
+.idea/
+.vscode/
+coverage/
+playwright-report/
+test-results/
+# SF-204 : les secrets ne sont jamais versionnés
+.env
+.env.*
+!.env.example

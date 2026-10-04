@@ -1,0 +1,23 @@
+# Routage des alertes. Remplacer l'URL par le webhook Discord / Slack de l'équipe
+# (Discord : Paramètres du salon > Intégrations > Webhooks). Ne pas committer une vraie URL.
+route:
+  receiver: equipe-sinistreflow
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers: [severity="info"]
+      receiver: equipe-sinistreflow
+      repeat_interval: 24h
+
+receivers:
+  - name: equipe-sinistreflow
+    discord_configs:
+      - webhook_url: https://discord.com/api/webhooks/REMPLACER/PAR_VOTRE_WEBHOOK
+        send_resolved: true
+
+inhibit_rules:
+  # si l'application est tombée, inutile d'alerter aussi sur la latence et les erreurs
+  - source_matchers: [alertname="SinistreFlowInjoignable"]
+    target_matchers: [severity="warning"]

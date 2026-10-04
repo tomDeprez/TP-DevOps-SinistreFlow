@@ -1,0 +1,42 @@
+# Messages de commit EXACTS attendus (un par ticket). Utilisé par check-commits.sh
+# --- Lot A : code applicatif
+fix(SF-101): lire l'en-tête X-API-Key sans tenir compte de la casse
+fix(SF-102): corriger le mois dans parseIsoDate
+fix(SF-103): calculer le délai de déclaration en jours et non en heures
+fix(SF-104): générer les références de dossier avec claim_reference_seq
+fix(SF-105): interdire la transition REFUSE vers INDEMNISE
+fix(SF-106): convertir la franchise en centimes et borner l'indemnité à zéro
+fix(SF-107): corriger le calcul de l'offset de pagination
+fix(SF-108): paramétrer la requête de recherche du back-office
+fix(SF-109): remonter l'immatriculation depuis vehicles dans les API v1 et v2
+fix(SF-110): renvoyer les montants BIGINT en nombres entiers
+fix(SF-111): supprimer le décalage de fuseau horaire sur les dates
+fix(SF-112): comparer l'email de l'assuré sans tenir compte de la casse
+fix(SF-113): accepter les montants saisis au format français
+fix(SF-114): renvoyer le bon code HTTP et masquer la stack trace
+fix(SF-115): vérifier la base de données dans le endpoint /health
+# --- Lot B : front
+fix(SF-301): transmettre le numéro de plainte saisi dans le formulaire
+# --- Lot C : conteneurs et configuration
+fix(SF-201): écouter sur toutes les interfaces réseau
+fix(SF-202): configurer l'hôte de la base et le healthcheck dans docker compose
+fix(SF-203): trier les migrations par numéro de version
+fix(SF-204): retirer les secrets du dépôt
+fix(SF-205): image Docker de production légère et sans root
+fix(SF-206): jouer les migrations à chaque déploiement
+# --- Lot D : tests et CI
+test(SF-401): tests unitaires du domaine métier
+test(SF-402): tests d'intégration API et base de données
+test(SF-403): tests end-to-end Playwright
+ci(SF-404): pipeline d'intégration continue GitHub Actions
+ci(SF-405): publier l'image Docker sur GHCR
+# --- Lot E : supervision
+feat(SF-501): exposer les métriques Prometheus sur /metrics
+feat(SF-502): ajouter la stack Prometheus et Grafana
+feat(SF-503): ajouter les règles d'alerte
+feat(SF-504): produire des journaux structurés JSON
+# --- Lot F : déploiement et documentation
+feat(SF-601): script de provisionnement de la VM
+feat(SF-602): script de déploiement avec retour arrière
+docs(SF-603): ADR 0001 stratégie de versioning de l'API
+docs(SF-604): runbook d'exploitation

@@ -1,0 +1,79 @@
+groups:
+  - name: sinistreflow-disponibilite
+    rules:
+      - alert: SinistreFlowInjoignable
+        expr: up{job="sinistreflow"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "SinistreFlow ne répond plus à Prometheus"
+          description: "Le conteneur app ne répond pas sur /metrics depuis 1 minute."
+
+      - alert: SinistreFlowHealthKO
+        expr: probe_success{job="blackbox-health"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "/health en échec (base de données ?)"
+          description: "La sonde blackbox reçoit autre chose qu'un 2xx sur {{ $labels.instance }}."
+
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "PostgreSQL injoignable"
+
+  - name: sinistreflow-red
+    rules:
+      - alert: TauxErreurs5xxEleve
+        expr: |
+          sum(rate(sinistreflow_http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(sinistreflow_http_requests_total[5m])) > 0.05
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Plus de 5 % de réponses 5xx"
+          description: "Taux d'erreurs serveur : {{ $value | humanizePercentage }}"
+
+      - alert: LatenceP95Elevee
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(sinistreflow_http_request_duration_seconds_bucket[5m]))) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Latence p95 > 1 s"
+
+      - alert: PartenaireRejete
+        expr: increase(sinistreflow_errors_total{type="UnauthorizedError"}[10m]) > 20
+        labels: { severity: warning }
+        annotations:
+          summary: "Nombreux refus d'authentification partenaire (clé expirée ou attaque ?)"
+
+      - alert: AucuneDeclarationDepuis6h
+        expr: sum(increase(sinistreflow_claims_declared_total[6h])) == 0 and on() hour() >= 8 < 20
+        labels: { severity: info }
+        annotations:
+          summary: "Aucune déclaration de sinistre depuis 6 h en journée (formulaire cassé ?)"
+
+  - name: infrastructure
+    rules:
+      - alert: DisquePresquePlein
+        expr: node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"} < 0.10
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Moins de 10 % d'espace disque sur la VM"
+
+      - alert: MemoireSaturee
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.90
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Mémoire de la VM utilisée à plus de 90 %"
+
+      - alert: ConteneurRedemarreEnBoucle
+        expr: changes(container_start_time_seconds{name=~".+"}[15m]) > 3
+        labels: { severity: warning }
+        annotations:
+          summary: "Le conteneur {{ $labels.name }} redémarre en boucle"

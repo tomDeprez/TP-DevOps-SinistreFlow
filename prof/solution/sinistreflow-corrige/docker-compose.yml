@@ -1,0 +1,51 @@
+# Stack SinistreFlow (dev et prod). Variables : fichier .env (voir .env.example)
+#   docker compose up -d --build
+# Monitoring : docker compose -f docker-compose.yml -f monitoring/docker-compose.monitoring.yml up -d
+
+x-app: &app
+  image: ${APP_IMAGE:-sinistreflow:local}
+  build: .
+  env_file: .env
+  environment:
+    # SF-202 : dans le réseau compose, la base s'appelle "db" (localhost = le conteneur lui-même)
+    DB_HOST: db
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DB_USER:-sinistreflow}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD doit être défini dans .env}
+      POSTGRES_DB: ${DB_NAME:-sinistreflow}
+    # pas de "ports:" : PostgreSQL n'est jamais exposé hors du réseau Docker
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # SF-206 : les migrations sont jouées à chaque déploiement, avant l'application
+  migrate:
+    <<: *app
+    command: ["node", "src/db/migrate.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    <<: *app
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:

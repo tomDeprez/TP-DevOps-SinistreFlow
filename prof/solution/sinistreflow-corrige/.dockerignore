@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.git
+.github
+.env
+.env.*
+!.env.example
+coverage
+tests
+playwright-report
+test-results
+db/dump
+docs
+monitoring
+deploy
+partner-client
+*.md

@@ -1,0 +1,1744 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TP DevOps SinistreFlow</title>
+<meta name="description" content="IT-Akademy · TP DevOps de 4 jours : reprise d'une application existante, correction de bugs, tests, CI, déploiement sur VM et supervision.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #c43e00;
+  --primary-light: #e65100;
+  --primary-dark: #9a3000;
+  --accent: #ff754c;
+  --peach: #ffdfce;
+  --peach-soft: #fff1e8;
+  --navy: #1a1a2e;
+  --navy-2: #16213e;
+  --violet: #6b43ad;
+  --violet-soft: #eee5fa;
+  --cream: #faf9f5;
+  --paper: #ffffff;
+  --ink: #1a1a2e;
+  --muted: #5d5a6b;
+  --line: #e7e2da;
+  --green: #1e8e5a;
+  --green-soft: #e3f4ea;
+  --red: #c62828;
+  --red-soft: #fdeaea;
+  --amber: #b26a00;
+  --amber-soft: #fff4dc;
+  --blue: #2563a8;
+  --blue-soft: #e5effa;
+  --radius: 14px;
+  --display: "Sora", system-ui, sans-serif;
+  --body: "DM Sans", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16.5px;
+  line-height: 1.65;
+}
+a { color: var(--primary); }
+code, pre, kbd { font-family: var(--mono); }
+code { background: var(--peach-soft); color: var(--primary-dark); padding: .08em .38em; border-radius: 5px; font-size: .88em; }
+pre {
+  background: var(--navy); color: #f3efe8; padding: 16px 18px; border-radius: 12px;
+  overflow-x: auto; font-size: .84rem; line-height: 1.55; margin: 14px 0;
+}
+pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+pre .c { color: #9b97ad; }
+pre .k { color: #ff9a76; }
+pre .s { color: #b8e0a8; }
+kbd { background: #fff; border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; padding: 0 6px; font-size: .85em; }
+
+/* ---------- layout ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 28px; background: rgba(250, 249, 245, .92);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+}
+.topbar img { height: 34px; }
+.topbar .t { font-family: var(--display); font-weight: 700; font-size: .95rem; }
+.topbar .t span { color: var(--primary); }
+.topbar .pill { margin-left: auto; }
+.wrap { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 40px; max-width: 1340px; margin: 0 auto; padding: 0 28px; }
+nav.toc { position: sticky; top: 70px; align-self: start; max-height: calc(100vh - 90px); overflow-y: auto; padding: 26px 0; font-size: .88rem; }
+nav.toc h4 { font-family: var(--display); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; }
+nav.toc li a { display: block; padding: 5px 10px; border-left: 3px solid transparent; color: var(--ink); text-decoration: none; border-radius: 0 6px 6px 0; }
+nav.toc li a:hover { background: var(--peach-soft); border-left-color: var(--accent); }
+nav.toc li.sub a { padding-left: 24px; color: var(--muted); font-size: .84rem; }
+main { padding: 26px 0 80px; min-width: 0; }
+@media (max-width: 1020px) {
+  .wrap { grid-template-columns: 1fr; padding: 0 16px; }
+  nav.toc { display: none; }
+  .topbar { padding: 10px 16px; }
+}
+
+/* ---------- cover ---------- */
+.cover {
+  position: relative; overflow: hidden;
+  background: var(--navy); color: #fff; border-radius: 22px;
+  padding: 54px 52px 48px; margin-bottom: 44px;
+}
+.cover::after {
+  content: ""; position: absolute; right: -120px; top: -120px; width: 460px; height: 460px;
+  background: radial-gradient(circle, rgba(230, 81, 0, .55), rgba(230, 81, 0, 0) 68%);
+}
+.cover .kicker { font-family: var(--display); letter-spacing: .16em; text-transform: uppercase; font-size: .78rem; color: var(--accent); font-weight: 700; }
+.cover h1 { font-family: var(--display); font-size: clamp(2rem, 4.4vw, 3.3rem); line-height: 1.08; margin: 12px 0 14px; font-weight: 800; position: relative; z-index: 1; }
+.cover h1 em { font-style: normal; color: var(--accent); }
+.cover p.lead { font-size: 1.12rem; max-width: 760px; color: #ddd8ea; position: relative; z-index: 1; }
+.cover .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; position: relative; z-index: 1; }
+.cover .meta span { border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px; padding: 6px 14px; font-size: .86rem; }
+.cover .logo { position: absolute; right: 44px; bottom: 36px; height: 70px; z-index: 1; filter: drop-shadow(0 4px 18px rgba(0,0,0,.35)); }
+.cover .tagline { margin-top: 30px; font-family: var(--display); font-size: .95rem; color: #fff; opacity: .85; position: relative; z-index: 1; }
+@media (max-width: 700px) { .cover { padding: 34px 22px; } .cover .logo { display: none; } }
+
+/* ---------- sections ---------- */
+section.chap { margin: 0 0 64px; scroll-margin-top: 80px; }
+.chap-head { display: flex; align-items: baseline; gap: 16px; border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 22px; }
+.chap-head .num { font-family: var(--display); font-weight: 800; font-size: 2.4rem; color: var(--primary); line-height: 1; }
+.chap-head h2 { font-family: var(--display); font-size: 1.7rem; margin: 0; line-height: 1.2; }
+.chap-head .day { margin-left: auto; white-space: nowrap; }
+h3 { font-family: var(--display); font-size: 1.22rem; margin: 34px 0 10px; scroll-margin-top: 80px; }
+h4 { font-family: var(--display); font-size: 1.02rem; margin: 22px 0 8px; }
+p { margin: 10px 0; }
+.lede { font-size: 1.08rem; color: var(--muted); }
+
+.pill { display: inline-block; font-family: var(--display); font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 4px 11px; border-radius: 999px; background: var(--peach); color: var(--primary-dark); }
+.pill.violet { background: var(--violet-soft); color: var(--violet); }
+.pill.navy { background: var(--navy); color: #fff; }
+.pill.green { background: var(--green-soft); color: var(--green); }
+.pill.red { background: var(--red-soft); color: var(--red); }
+
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; margin: 16px 0; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 820px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.grid2 > .card, .grid3 > .card { margin: 0; }
+.card h4 { margin-top: 0; }
+
+.callout { border-radius: 12px; padding: 14px 18px 14px 52px; margin: 18px 0; position: relative; border: 1px solid; }
+.callout::before { position: absolute; left: 16px; top: 12px; font-size: 1.25rem; }
+.callout.info { background: var(--blue-soft); border-color: #c4d8f0; }
+.callout.info::before { content: "ℹ️"; }
+.callout.warn { background: var(--amber-soft); border-color: #f0d9a8; }
+.callout.warn::before { content: "⚠️"; }
+.callout.danger { background: var(--red-soft); border-color: #f2c4c4; }
+.callout.danger::before { content: "⛔"; }
+.callout.tip { background: var(--green-soft); border-color: #bfe3cf; }
+.callout.tip::before { content: "💡"; }
+.callout.prof { background: var(--violet-soft); border-color: #d9c8f2; }
+.callout.prof::before { content: "🎓"; }
+.callout > :first-child { margin-top: 0; }
+.callout > :last-child { margin-bottom: 0; }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: .92rem; background: var(--paper); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+th { background: var(--navy); color: #fff; font-family: var(--display); font-weight: 600; font-size: .8rem; letter-spacing: .03em; text-align: left; padding: 10px 12px; }
+td { padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+tr:nth-child(even) td { background: #fcfbf8; }
+.tablewrap { overflow-x: auto; }
+
+.checklist { list-style: none; padding: 0; margin: 10px 0; }
+.checklist li { padding: 6px 0 6px 32px; position: relative; border-bottom: 1px dashed var(--line); }
+.checklist li::before { content: ""; position: absolute; left: 4px; top: 10px; width: 16px; height: 16px; border: 2px solid var(--primary); border-radius: 4px; background: #fff; }
+
+figure.diagram { margin: 22px 0; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 12px; }
+figure.diagram svg { width: 100%; height: auto; display: block; }
+figure.diagram figcaption { font-size: .86rem; color: var(--muted); margin-top: 8px; padding: 0 6px; }
+figure.diagram figcaption b { color: var(--ink); font-family: var(--display); }
+
+/* tickets */
+.ticket { background: var(--paper); border: 1px solid var(--line); border-left: 6px solid var(--primary); border-radius: 12px; padding: 16px 20px; margin: 14px 0; }
+.ticket.front { border-left-color: var(--violet); }
+.ticket.infra { border-left-color: var(--blue); }
+.ticket header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 6px; }
+.ticket .id { font-family: var(--mono); font-weight: 600; color: var(--primary); }
+.ticket.front .id { color: var(--violet); }
+.ticket.infra .id { color: var(--blue); }
+.ticket .ttl { font-family: var(--display); font-weight: 700; }
+.ticket .stars { margin-left: auto; color: var(--accent); letter-spacing: 2px; font-size: .95rem; }
+.ticket blockquote { margin: 8px 0; padding: 4px 14px; border-left: 3px solid var(--line); color: var(--muted); font-style: italic; }
+.ticket .commit { display: block; font-family: var(--mono); font-size: .84rem; background: var(--navy); color: #ffd7c4; padding: 8px 12px; border-radius: 8px; margin-top: 8px; overflow-x: auto; white-space: nowrap; }
+details.hint { margin: 8px 0 0; border: 1px dashed #d8cfc2; border-radius: 10px; padding: 6px 12px; background: #fffdf9; }
+details.hint summary { cursor: pointer; font-weight: 700; color: var(--primary-dark); font-size: .9rem; }
+details.hint[open] { background: var(--peach-soft); }
+
+.steps { counter-reset: step; list-style: none; padding: 0; }
+.steps > li { counter-increment: step; position: relative; padding: 4px 0 14px 50px; }
+.steps > li::before { content: counter(step); position: absolute; left: 0; top: 2px; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; font-family: var(--display); font-weight: 700; display: grid; place-items: center; }
+.steps > li > strong:first-child { font-family: var(--display); }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+.kpis div { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.kpis b { display: block; font-family: var(--display); font-size: 1.7rem; color: var(--primary); line-height: 1.1; }
+.kpis span { font-size: .84rem; color: var(--muted); }
+@media (max-width: 820px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+footer.end { margin-top: 70px; padding: 26px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: .86rem; }
+footer.end img { height: 40px; display: block; margin: 0 auto 8px; }
+
+/* svg text defaults */
+svg text { font-family: var(--body); }
+svg .h { font-family: var(--display); font-weight: 700; }
+svg .m { font-family: var(--mono); }
+
+@media print {
+  .topbar, nav.toc { display: none; }
+  .wrap { display: block; padding: 0; }
+  body { background: #fff; font-size: 12pt; }
+  section.chap { page-break-before: always; }
+  .cover { page-break-after: always; }
+  figure.diagram, .ticket, .card, table { page-break-inside: avoid; }
+  details.hint { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <img src="assets/logo-it-akademy.png" alt="IT-Akademy">
+  <div class="t">TP DevOps · <span>SinistreFlow</span></div>
+  <span class="pill navy">4 jours</span>
+</header>
+
+<div class="wrap">
+<nav class="toc" aria-label="Sommaire">
+  <h4>Sommaire</h4>
+  <ol>
+    <li><a href="#contexte">01 · Mise en situation</a></li>
+    <li><a href="#regles">02 · Règles du jeu</a></li>
+    <li><a href="#planning">03 · Planning des 4 jours</a></li>
+    <li><a href="#devops">04 · Le DevOps en 1 schéma</a></li>
+    <li><a href="#archi">05 · L'application SinistreFlow</a></li>
+    <li><a href="#m0">06 · Mission 0 · Prise en main</a></li>
+    <li><a href="#m1">07 · Mission 1 · Corriger les bugs</a></li>
+    <li class="sub"><a href="#lot-a">Lot A · Application &amp; API</a></li>
+    <li class="sub"><a href="#lot-b">Lot B · Front</a></li>
+    <li><a href="#m2">08 · Mission 2 · Le dilemme des versions</a></li>
+    <li><a href="#m3">09 · Mission 3 · Les 3 couches de tests</a></li>
+    <li><a href="#m4">10 · Mission 4 · Conteneurs (Lot C)</a></li>
+    <li><a href="#m5">11 · Mission 5 · CI GitHub Actions</a></li>
+    <li><a href="#m6">12 · Mission 6 · Déploiement sur VM</a></li>
+    <li><a href="#m7">13 · Mission 7 · Supervision</a></li>
+    <li><a href="#recette">14 · Rendu</a></li>
+    <li><a href="#bareme">15 · Barème</a></li>
+    <li><a href="#annexes">16 · Annexes</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ================================================================ COUVERTURE -->
+<div class="cover">
+  <div class="kicker">IT-Akademy · Module DevOps · Projet fil rouge</div>
+  <h1>Reprendre le code d'une entreprise,<br>le <em>réparer</em>, le <em>tester</em>,<br>le <em>déployer</em> et le <em>surveiller</em>.</h1>
+  <p class="lead">Vous êtes la nouvelle équipe technique de <strong>MutuAlp Assurances</strong>. On vous confie
+  <strong>SinistreFlow</strong>, l'application de déclaration de sinistres : 5 ans de production, une vraie base de données,
+  des partenaires qui en dépendent… et une pile de bugs. Votre mission : remettre le produit d'aplomb et lui donner
+  une chaîne DevOps digne de ce nom.</p>
+  <div class="meta">
+    <span>⏱ 4 jours · 28 h</span>
+    <span>👥 Équipes de 3 à 4</span>
+    <span>🐞 22 tickets</span>
+    <span>🧪 Unitaires · Intégration · E2E</span>
+    <span>⚙️ GitHub Actions</span>
+    <span>☁️ VM Linux</span>
+    <span>📈 Prometheus · Grafana</span>
+  </div>
+  <div class="tagline">Apprenez la tech. Construisez votre avenir.</div>
+  <img class="logo" src="assets/logo-it-akademy.png" alt="">
+</div>
+
+<!-- ================================================================ 01 CONTEXTE -->
+<section class="chap" id="contexte">
+  <div class="chap-head"><span class="num">01</span><h2>Mise en situation</h2></div>
+
+  <p class="lede">Lundi, 9 h. Vous arrivez chez MutuAlp Assurances, mutuelle régionale de 45 000 sociétaires.
+  Le lead dev, Thomas, est parti il y a un mois. Il a laissé une note, un dépôt Git, un dump de la base de production…
+  et aucune documentation d'exploitation.</p>
+
+  <div class="kpis">
+    <div><b>425</b><span>dossiers sinistres en base</span></div>
+    <div><b>3</b><span>versions d'API en production</span></div>
+    <div><b>0</b><span>test automatisé fiable</span></div>
+    <div><b>0</b><span>métrique, alerte ou pipeline</span></div>
+  </div>
+
+  <div class="grid3">
+    <div class="card">
+      <h4>👤 Les assurés</h4>
+      <p>Déclarent leurs sinistres (accident, vol, dégât des eaux…) via un formulaire en ligne en 4 étapes.</p>
+    </div>
+    <div class="card">
+      <h4>🗂️ Les gestionnaires</h4>
+      <p>Instruisent les dossiers dans le back-office : recherche, changement de statut, suivi de l'indemnisation.</p>
+    </div>
+    <div class="card">
+      <h4>🔧 Les partenaires</h4>
+      <p>Le cabinet <strong>ExpertAuto</strong> récupère les dossiers à expertiser et dépose ses rapports via l'API.
+      Leur connecteur tourne sur votre serveur… et <strong>vous n'avez pas le droit de le modifier</strong>.</p>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <p><strong>La situation est critique.</strong> Le connecteur ExpertAuto est en échec : plus aucune expertise n'arrive,
+    donc plus aucune indemnisation n'est versée. Le support a ouvert 22 tickets. Le CTO propose de
+    « supprimer les vieilles versions de l'API pour simplifier ». La direction veut savoir <em>avant vendredi</em>
+    si l'application peut être redéployée proprement sur un nouveau serveur, et surtout <strong>être prévenue la prochaine fois
+    que ça casse</strong>.</p>
+  </div>
+
+  <h3>Ce que vous devez livrer vendredi</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4>Code &amp; qualité</h4>
+      <ul>
+        <li>Les 22 tickets corrigés, <strong>un commit par ticket au message imposé</strong></li>
+        <li>Une ADR (décision d'architecture) sur le versioning de l'API</li>
+        <li>Les 3 couches de tests : unitaires, intégration, End-to-End</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Chaîne DevOps</h4>
+      <ul>
+        <li>Un dépôt GitHub avec un pipeline <strong>GitHub Actions</strong> qui exécute tous les tests</li>
+        <li>L'application conteneurisée et <strong>déployée sur une VM</strong></li>
+        <li>Le connecteur ExpertAuto <strong>au vert, lancé depuis la VM</strong></li>
+        <li>Une <strong>supervision</strong> : métriques, tableau de bord, alertes</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 02 REGLES -->
+<section class="chap" id="regles">
+  <div class="chap-head"><span class="num">02</span><h2>Règles du jeu</h2></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>✅ Obligatoire</h4>
+      <ul>
+        <li>Un dépôt GitHub par équipe (formateur invité en <em>Admin</em>).</li>
+        <li><code>main</code> protégée : on passe <strong>uniquement</strong> par des Pull Requests relues par un coéquipier.</li>
+        <li>Une branche par ticket (<code>fix/SF-104-reference-sequence</code>).</li>
+        <li><strong>Un commit par correction</strong>, avec le <strong>message exact</strong> donné dans le ticket.
+        Le test qui prouve la correction va dans le même commit.</li>
+        <li>Un <strong>journal de bord</strong> d'équipe (<code>docs/JOURNAL.md</code>) : qui a fait quoi, chaque jour, ce qui a bloqué.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>⛔ Interdit</h4>
+      <ul>
+        <li>Modifier <code>partner-client/</code> : c'est le code d'une autre entreprise.</li>
+        <li>Supprimer ou désactiver un test pour « faire passer » la CI.</li>
+        <li>Modifier le dump <code>db/dump/*.sql</code> : c'est la vérité de la production.</li>
+        <li><code>git push --force</code> sur <code>main</code>.</li>
+        <li>Committer un secret (mot de passe, clé, token).</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Le format des commits</h3>
+  <p>Le formateur vérifie automatiquement l'historique de chaque dépôt : un message différent d'un seul caractère
+  n'est pas comptabilisé. Format <a href="https://www.conventionalcommits.org/fr/">Conventional Commits</a> :</p>
+  <pre><code><span class="k">fix</span>(<span class="s">SF-107</span>): corriger le calcul de l'offset de pagination
+ │     │        └─ description EXACTE du ticket
+ │     └─ numéro du ticket
+ └─ type : fix · feat · test · ci · docs</code></pre>
+
+  <div class="callout info">
+    <p><strong>Pourquoi tant de rigueur ?</strong> En entreprise, l'historique Git est un outil d'exploitation :
+    quand la production casse à 3 h du matin, on cherche <em>quel commit</em> a introduit le problème
+    (<code>git log --grep SF-</code>, <code>git bisect</code>) et on le relie au ticket. Un commit = une intention = un retour arrière possible.</p>
+  </div>
+
+</section>
+
+<!-- ================================================================ 03 PLANNING -->
+<section class="chap" id="planning">
+  <div class="chap-head"><span class="num">03</span><h2>Planning des 4 jours</h2></div>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 400" role="img" aria-label="Planning des 4 jours">
+      <defs>
+        <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#ffdfce" stroke-width="4"/>
+        </pattern>
+      </defs>
+      <!-- colonnes jours -->
+      <g font-size="13">
+        <rect x="170" y="10" width="200" height="34" rx="8" fill="#1a1a2e"/>
+        <text x="270" y="32" text-anchor="middle" fill="#fff" class="h">Jour 1 · Comprendre</text>
+        <rect x="378" y="10" width="200" height="34" rx="8" fill="#1a1a2e"/>
+        <text x="478" y="32" text-anchor="middle" fill="#fff" class="h">Jour 2 · Réparer</text>
+        <rect x="586" y="10" width="200" height="34" rx="8" fill="#1a1a2e"/>
+        <text x="686" y="32" text-anchor="middle" fill="#fff" class="h">Jour 3 · Industrialiser</text>
+        <rect x="794" y="10" width="200" height="34" rx="8" fill="#1a1a2e"/>
+        <text x="894" y="32" text-anchor="middle" fill="#fff" class="h">Jour 4 · Livrer</text>
+      </g>
+      <g stroke="#e7e2da" stroke-dasharray="4 4">
+        <line x1="374" y1="50" x2="374" y2="390"/><line x1="582" y1="50" x2="582" y2="390"/><line x1="790" y1="50" x2="790" y2="390"/>
+      </g>
+      <!-- lignes -->
+      <g font-size="13" class="h" fill="#1a1a2e">
+        <text x="10" y="78">M0 · Prise en main</text>
+        <text x="10" y="120">M1 · Bugs (lots A, B)</text>
+        <text x="10" y="162">M2 · Versions d'API</text>
+        <text x="10" y="204">M3 · Tests ×3 couches</text>
+        <text x="10" y="246">M4 · Conteneurs (lot C)</text>
+        <text x="10" y="288">M5 · CI GitHub Actions</text>
+        <text x="10" y="330">M6 · Déploiement VM</text>
+        <text x="10" y="372">M7 · Supervision</text>
+      </g>
+      <g>
+        <rect x="170" y="62" width="120" height="24" rx="6" fill="#c43e00"/>
+        <rect x="250" y="104" width="328" height="24" rx="6" fill="#e65100"/>
+        <rect x="578" y="104" width="60" height="24" rx="6" fill="url(#hatch)" stroke="#e65100"/>
+        <rect x="430" y="146" width="210" height="24" rx="6" fill="#6b43ad"/>
+        <rect x="250" y="188" width="536" height="24" rx="6" fill="#ff754c"/>
+        <rect x="586" y="230" width="120" height="24" rx="6" fill="#2563a8"/>
+        <rect x="640" y="272" width="200" height="24" rx="6" fill="#16213e"/>
+        <rect x="794" y="314" width="120" height="24" rx="6" fill="#1e8e5a"/>
+        <rect x="830" y="356" width="120" height="24" rx="6" fill="#9a3000"/>
+      </g>
+      <g font-size="11" fill="#fff">
+        <text x="180" y="78">install · dump</text>
+        <text x="260" y="120">reproduire → test rouge → corriger → commit</text>
+        <text x="440" y="162">analyse · ADR · correctif</text>
+        <text x="260" y="204">unitaires dès J1, intégration J2, E2E J3 (on écrit le test AVANT le correctif)</text>
+        <text x="594" y="246">Docker · compose</text>
+        <text x="650" y="288">pipeline complet + image</text>
+        <text x="802" y="330">VM · nginx</text>
+        <text x="838" y="372">Prom · Grafana</text>
+      </g>
+      <!-- jalons -->
+      <g font-size="11" class="h">
+        <circle cx="290" cy="74" r="7" fill="#fff" stroke="#c43e00" stroke-width="3"/>
+        <circle cx="640" cy="158" r="7" fill="#fff" stroke="#6b43ad" stroke-width="3"/>
+        <circle cx="840" cy="284" r="7" fill="#fff" stroke="#16213e" stroke-width="3"/>
+        <circle cx="950" cy="368" r="7" fill="#fff" stroke="#9a3000" stroke-width="3"/>
+      </g>
+    </svg>
+    <figcaption><b>Vue d'ensemble.</b> Les tests ne sont pas « la mission du jour 3 » : on écrit un test pour chaque bug corrigé
+    dès le premier jour. Les ronds marquent les jalons à atteindre
+    (stack locale opérationnelle · ADR · pipeline vert · connecteur vert sur la VM).</figcaption>
+  </figure>
+
+  <div class="tablewrap"><table>
+    <tr><th>Jour</th><th>Matin</th><th>Après-midi</th><th>Point de contrôle (17 h)</th></tr>
+    <tr><td><b>J1</b></td><td>Mission 0 : dépôt GitHub, protection de <code>main</code>, application lancée avec le dump, connecteur lancé (rouge).</td><td>Mission 1 : premiers tickets (SF-101, 105, 107, 112, 114…) + leurs tests unitaires / d'intégration.</td><td>Stack locale + 1ʳᵉ PR fusionnée.</td></tr>
+    <tr><td><b>J2</b></td><td>Mission 1 suite (lot A complet, lot B).</td><td>Mission 2 : SF-109, analyse, ADR, correctif. Tests d'intégration des 3 versions.</td><td>ADR fusionnée sur <code>main</code>.</td></tr>
+    <tr><td><b>J3</b></td><td>Mission 4 : Docker, compose, lot C. Tests E2E Playwright.</td><td>Mission 5 : GitHub Actions (unitaires, intégration, E2E, recette partenaire, image).</td><td>Pipeline vert sur <code>main</code>.</td></tr>
+    <tr><td><b>J4</b></td><td>Mission 6 : provisionnement de la VM, déploiement, connecteur au vert <strong>sur la VM</strong>.</td><td>Mission 7 : métriques, Grafana, alertes, test de panne, preuves dans le dépôt.</td><td>Lien du dépôt GitHub rendu.</td></tr>
+  </table></div>
+</section>
+
+<!-- ================================================================ 04 DEVOPS -->
+<section class="chap" id="devops">
+  <div class="chap-head"><span class="num">04</span><h2>Le DevOps en un schéma</h2></div>
+
+  <p class="lede">Le DevOps n'est ni un outil ni un poste : c'est une façon de travailler où <strong>ceux qui construisent
+  le logiciel sont aussi responsables de son fonctionnement en production</strong>, et où tout ce qui peut être
+  automatisé l'est, pour livrer souvent, sans peur.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 450" role="img" aria-label="Boucle DevOps">
+      <path d="M500,200 C430,90 230,90 230,200 C230,310 430,310 500,200" fill="none" stroke="#c43e00" stroke-width="46" stroke-linecap="round"/>
+      <path d="M500,200 C570,90 770,90 770,200 C770,310 570,310 500,200" fill="none" stroke="#1a1a2e" stroke-width="46" stroke-linecap="round"/>
+      <path d="M500,200 C430,90 230,90 230,200 C230,310 430,310 500,200" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="3 10" opacity=".55"/>
+      <path d="M500,200 C570,90 770,90 770,200 C770,310 570,310 500,200" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="3 10" opacity=".55"/>
+      <!-- sens de rotation -->
+      <g fill="#fff" id="loop-arrows">
+        <path d="M255.6,142.8 L271,140 L262.6,128.8 Z"/>
+        <path d="M268.4,266.8 L253,264 L261.4,252.8 Z"/>
+      </g>
+      <g fill="#fff" transform="translate(1000,0) scale(-1,1)">
+        <path d="M255.6,142.8 L271,140 L262.6,128.8 Z"/>
+        <path d="M268.4,266.8 L253,264 L261.4,252.8 Z"/>
+      </g>
+      <text x="345" y="208" text-anchor="middle" class="h" font-size="30" fill="#c43e00">DEV</text>
+      <text x="655" y="208" text-anchor="middle" class="h" font-size="30" fill="#1a1a2e">OPS</text>
+      <!-- étapes -->
+      <g font-size="14" class="h">
+        <circle cx="339" cy="117" r="9" fill="#fff" stroke="#c43e00" stroke-width="4"/>
+        <text x="339" y="70" text-anchor="middle" fill="#1a1a2e">1 · PLAN</text>
+        <text x="339" y="88" text-anchor="middle" font-size="11" fill="#6b43ad">tickets · ADR (M1, M2)</text>
+        <circle cx="230" cy="200" r="9" fill="#fff" stroke="#c43e00" stroke-width="4"/>
+        <text x="170" y="196" text-anchor="end" fill="#1a1a2e">2 · CODE</text>
+        <text x="170" y="214" text-anchor="end" font-size="11" fill="#6b43ad">corrections (M1)</text>
+        <circle cx="339" cy="283" r="9" fill="#fff" stroke="#c43e00" stroke-width="4"/>
+        <text x="285" y="336" text-anchor="middle" fill="#1a1a2e">3 · BUILD</text>
+        <text x="285" y="354" text-anchor="middle" font-size="11" fill="#6b43ad">image Docker (M4)</text>
+        <circle cx="428" cy="262" r="9" fill="#fff" stroke="#c43e00" stroke-width="4"/>
+        <text x="478" y="352" text-anchor="end" fill="#1a1a2e">4 · TEST</text>
+        <text x="478" y="370" text-anchor="end" font-size="11" fill="#6b43ad">3 couches (M3)</text>
+        <line x1="432" y1="274" x2="462" y2="334" stroke="#c43e00" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <circle cx="661" cy="117" r="9" fill="#fff" stroke="#1a1a2e" stroke-width="4"/>
+        <text x="661" y="70" text-anchor="middle" fill="#1a1a2e">5 · RELEASE</text>
+        <text x="661" y="88" text-anchor="middle" font-size="11" fill="#6b43ad">CI + registre GHCR (M5)</text>
+        <circle cx="770" cy="200" r="9" fill="#fff" stroke="#1a1a2e" stroke-width="4"/>
+        <text x="830" y="196" fill="#1a1a2e">6 · DEPLOY</text>
+        <text x="830" y="214" font-size="11" fill="#6b43ad">VM, compose, nginx (M6)</text>
+        <circle cx="661" cy="283" r="9" fill="#fff" stroke="#1a1a2e" stroke-width="4"/>
+        <text x="720" y="336" text-anchor="middle" fill="#1a1a2e">7 · OPERATE</text>
+        <text x="720" y="354" text-anchor="middle" font-size="11" fill="#6b43ad">runbook, sauvegardes (M6)</text>
+        <circle cx="572" cy="262" r="9" fill="#fff" stroke="#1a1a2e" stroke-width="4"/>
+        <text x="522" y="352" fill="#1a1a2e">8 · MONITOR</text>
+        <text x="522" y="370" font-size="11" fill="#6b43ad">Prometheus, Grafana (M7)</text>
+        <line x1="568" y1="274" x2="538" y2="334" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="3 3"/>
+      </g>
+      <!-- feedback -->
+      <path d="M600,392 C540,418 460,418 400,392" fill="none" stroke="#ff754c" stroke-width="3" stroke-dasharray="6 5" marker-end="url(#fb)"/>
+      <defs><marker id="fb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ff754c"/></marker></defs>
+      <text x="500" y="442" text-anchor="middle" font-size="12" fill="#9a3000" class="h">ce que la production nous apprend devient le prochain ticket</text>
+    </svg>
+    <figcaption><b>La boucle infinie.</b> À gauche, la partie « Dev » ; à droite, la partie « Ops ». Le DevOps consiste à faire
+    tourner cette boucle <em>vite</em> et <em>souvent</em>. Chaque mission du TP correspond à une étape de la boucle.</figcaption>
+  </figure>
+
+  <h3>Les 5 idées à retenir</h3>
+  <div class="grid3">
+    <div class="card"><h4>🔁 Boucles de rétroaction courtes</h4><p>Plus un bug est détecté tôt, moins il coûte. Un test unitaire répond en millisecondes, la CI en minutes, un client en colère en semaines.</p></div>
+    <div class="card"><h4>⬅️ Shift-left</h4><p>Ramener les contrôles le plus à gauche possible de la boucle : tests, sécurité, migrations, validés <em>avant</em> la production.</p></div>
+    <div class="card"><h4>🤖 Automatiser la répétition</h4><p>Ce qui dépend de « penser à… » finit par être oublié (SF-206). Ce qui est dans un script ou un pipeline est fait à chaque fois.</p></div>
+    <div class="card"><h4>📏 Mesurer</h4><p>Sans métriques, on ne sait pas si ça marche, ni depuis quand ça ne marche plus (SF-115). On supervise la technique <em>et</em> le métier.</p></div>
+    <div class="card"><h4>🧩 Tout est code</h4><p>Infrastructure, pipeline, configuration, tableaux de bord, alertes : versionnés dans Git, relus en PR, reproductibles.</p></div>
+    <div class="card"><h4>🤝 You build it, you run it</h4><p>L'équipe qui écrit le code est celle qui le déploie et qui est réveillée quand il casse. On écrit donc du code facile à exploiter.</p></div>
+  </div>
+
+  <h3>Comment mesure-t-on une équipe DevOps ? (métriques DORA)</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Métrique</th><th>Question</th><th>Chez MutuAlp aujourd'hui</th><th>Objectif vendredi</th></tr>
+    <tr><td>Fréquence de déploiement</td><td>À quelle fréquence livre-t-on en production ?</td><td>« quand Thomas avait le temps »</td><td>à chaque fusion sur <code>main</code></td></tr>
+    <tr><td>Délai de mise en production</td><td>Combien de temps entre un commit et sa mise en prod ?</td><td>des semaines</td><td>&lt; 30 min</td></tr>
+    <tr><td>Taux d'échec des changements</td><td>Quelle proportion de livraisons casse la prod ?</td><td>inconnu (aucune mesure)</td><td>mesuré, &lt; 15 %</td></tr>
+    <tr><td>Temps de restauration</td><td>Combien de temps pour revenir à un état sain ?</td><td>inconnu (personne n'est prévenu)</td><td>&lt; 10 min (alerte + retour arrière)</td></tr>
+  </table></div>
+</section>
+
+<!-- ================================================================ 05 ARCHI -->
+<section class="chap" id="archi">
+  <div class="chap-head"><span class="num">05</span><h2>L'application SinistreFlow</h2></div>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 520" role="img" aria-label="Architecture de SinistreFlow">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a1a2e"/></marker>
+        <marker id="aro" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c43e00"/></marker>
+      </defs>
+      <rect x="255" y="14" width="730" height="492" rx="20" fill="#faf9f5" stroke="#1a1a2e" stroke-width="1.5" stroke-dasharray="8 6"/>
+      <text x="275" y="40" class="h" font-size="13" fill="#1a1a2e">MutuAlp Assurances · système d'information</text>
+      <g font-size="13">
+        <rect x="14" y="94" width="190" height="62" rx="12" fill="#fff" stroke="#e7e2da"/>
+        <text x="30" y="120" class="h">👤 Assuré</text><text x="30" y="140" font-size="11" fill="#5d5a6b">navigateur · formulaire 4 étapes</text>
+        <rect x="14" y="164" width="190" height="62" rx="12" fill="#fff" stroke="#e7e2da"/>
+        <text x="30" y="190" class="h">🗂️ Gestionnaire</text><text x="30" y="210" font-size="11" fill="#5d5a6b">navigateur · back-office</text>
+        <rect x="14" y="250" width="190" height="78" rx="12" fill="#fff1e8" stroke="#c43e00" stroke-width="2"/>
+        <text x="30" y="276" class="h" fill="#9a3000">🔧 ExpertAuto</text><text x="30" y="296" font-size="11" fill="#9a3000">partenaire externe</text><text x="30" y="314" font-size="11" fill="#9a3000">appelle v1 + v2 + v3</text>
+        <rect x="14" y="346" width="190" height="62" rx="12" fill="#fff" stroke="#e7e2da"/>
+        <text x="30" y="372" class="h">📱 Appli mobile</text><text x="30" y="392" font-size="11" fill="#5d5a6b">équipe interne · v2</text>
+        <rect x="14" y="420" width="190" height="62" rx="12" fill="#fff" stroke="#e7e2da"/>
+        <text x="30" y="446" class="h">⚖️ AssurCompare</text><text x="30" y="466" font-size="11" fill="#5d5a6b">partenaire externe · v1</text>
+      </g>
+      <rect x="290" y="60" width="430" height="430" rx="16" fill="#fff" stroke="#c43e00" stroke-width="2.5"/>
+      <path d="M290,98 V76 a16,16 0 0 1 16,-16 H704 a16,16 0 0 1 16,16 V98 Z" fill="#c43e00"/>
+      <text x="505" y="85" text-anchor="middle" class="h" fill="#fff" font-size="15">SinistreFlow · Node.js 22 / Express · port 3000</text>
+      <text x="306" y="118" class="h" fill="#5d5a6b" font-size="11">api/ · routes HTTP</text>
+      <g font-size="12">
+        <rect x="306" y="126" width="140" height="40" rx="8" fill="#eee5fa"/><text x="318" y="143" class="m" fill="#6b43ad">/api/public</text><text x="318" y="158" font-size="10" fill="#6b43ad">formulaire assuré</text>
+        <rect x="306" y="174" width="140" height="40" rx="8" fill="#eee5fa"/><text x="318" y="191" class="m" fill="#6b43ad">/api/internal</text><text x="318" y="206" font-size="10" fill="#6b43ad">back-office · HTTP Basic</text>
+        <rect x="306" y="222" width="140" height="40" rx="8" fill="#ffdfce"/><text x="318" y="239" class="m" fill="#9a3000">/api/v1</text><text x="318" y="254" font-size="10" fill="#9a3000">2021 · snake_case · €</text>
+        <rect x="306" y="270" width="140" height="40" rx="8" fill="#ffdfce"/><text x="318" y="287" class="m" fill="#9a3000">/api/v2</text><text x="318" y="302" font-size="10" fill="#9a3000">2023 · camelCase · cts</text>
+        <rect x="306" y="318" width="140" height="40" rx="8" fill="#ffdfce"/><text x="318" y="335" class="m" fill="#9a3000">/api/v3</text><text x="318" y="350" font-size="10" fill="#9a3000">2025 · imbriqué · EN</text>
+        <rect x="306" y="366" width="140" height="40" rx="8" fill="#eee5fa"/><text x="318" y="383" class="m" fill="#6b43ad">/health</text><text x="318" y="398" font-size="10" fill="#6b43ad">load-balancer</text>
+        <path d="M452,224 h6 v132 h-6" fill="none" stroke="#c43e00" stroke-width="2"/>
+        <text x="464" y="380" font-size="10" fill="#9a3000" class="h">X-API-Key</text>
+        
+      </g>
+      <rect x="530" y="126" width="174" height="76" rx="10" fill="#f4f1fb" stroke="#d9c8f2"/>
+      <text x="544" y="148" class="h" font-size="13" fill="#1a1a2e">services/</text>
+      <text x="544" y="166" font-size="10.5" fill="#5d5a6b">déclarer · déposer une</text><text x="544" y="181" font-size="10.5" fill="#5d5a6b">expertise · changer de statut</text>
+      <rect x="530" y="214" width="174" height="96" rx="10" fill="#e3f4ea" stroke="#bfe3cf"/>
+      <text x="544" y="236" class="h" font-size="13" fill="#1e8e5a">domain/</text>
+      <text x="544" y="254" font-size="10.5" fill="#1e8e5a">dates · montants · workflow</text><text x="544" y="269" font-size="10.5" fill="#1e8e5a">indemnité · règles</text>
+      <text x="544" y="294" font-size="10.5" fill="#1e8e5a" class="h">→ tests unitaires</text>
+      <rect x="530" y="322" width="174" height="84" rx="10" fill="#e5effa" stroke="#c4d8f0"/>
+      <text x="544" y="344" class="h" font-size="13" fill="#2563a8">repositories/</text>
+      <text x="544" y="362" font-size="10.5" fill="#2563a8">requêtes SQL</text><text x="544" y="377" font-size="10.5" fill="#2563a8">claim · contract · partner</text>
+      <g stroke="#1a1a2e" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+        <path d="M462,290 C500,290 500,164 528,164"/>
+        <line x1="617" y1="202" x2="617" y2="212"/>
+        <line x1="617" y1="310" x2="617" y2="320"/>
+        <path d="M704,364 C730,364 730,290 748,290"/>
+      </g>
+      <text x="505" y="440" text-anchor="middle" font-size="11" fill="#5d5a6b">public/ · HTML + JS sans framework (express.static)</text>
+      <text x="505" y="470" text-anchor="middle" font-size="11" fill="#c62828" class="h">aucune métrique · aucun log structuré · aucune alerte</text>
+      <g>
+        <rect x="750" y="150" width="200" height="240" fill="#2563a8"/>
+        <ellipse cx="850" cy="390" rx="100" ry="22" fill="#1d4f87"/>
+        <ellipse cx="850" cy="150" rx="100" ry="22" fill="#3a78bd"/>
+        <text x="850" y="156" text-anchor="middle" class="h" fill="#fff" font-size="14">PostgreSQL 16</text>
+        <g font-size="11" fill="#e5effa" class="m">
+          <text x="770" y="196">policyholders · 90</text><text x="770" y="216">contracts · 116</text><text x="770" y="236">claims · 425</text>
+          <text x="770" y="256">vehicles</text><text x="770" y="276">expertises</text><text x="770" y="296">claim_status_history</text>
+          <text x="770" y="316">partners (migr. 10)</text><text x="770" y="336">schema_migrations</text>
+        </g>
+        <text x="850" y="440" text-anchor="middle" font-size="11" fill="#5d5a6b">dump prod du 28/09/2026</text>
+        <text x="850" y="456" text-anchor="middle" font-size="11" fill="#5d5a6b">migrations 1 → 9 appliquées</text>
+      </g>
+      <g stroke="#1a1a2e" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+        <path d="M204,125 C250,125 260,146 304,146"/>
+        <path d="M204,195 C250,195 260,194 304,194"/>
+        <path d="M204,377 C250,377 260,290 304,290"/>
+        <path d="M204,451 C262,451 262,242 304,242"/>
+      </g>
+      <g stroke="#c43e00" stroke-width="2.6" fill="none" marker-end="url(#aro)">
+        <path d="M204,280 C250,280 262,242 304,242"/>
+        <path d="M204,289 C250,289 262,290 304,290"/>
+        <path d="M204,298 C250,298 262,338 304,338"/>
+      </g>
+    </svg>
+    <figcaption><b>Vue des composants.</b> Une seule application sert le front, le back-office et trois versions d'API.
+    Les flèches orange sont les appels du partenaire ExpertAuto : retenez qu'il utilise <strong>les trois versions</strong>.
+    Seule la couche <code>domain/</code> est indépendante du web et de la base : c'est elle qu'on teste unitairement.</figcaption>
+  </figure>
+
+  <h3>Le cycle de vie d'un dossier</h3>
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 250" role="img" aria-label="Machine à états des dossiers">
+      <defs>
+        <marker id="sm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a1a2e"/></marker>
+        <marker id="smr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c62828"/></marker>
+      </defs>
+      <g font-size="11" class="h" text-anchor="middle">
+        <rect x="10" y="80" width="110" height="44" rx="22" fill="#1a1a2e"/><text x="65" y="106" fill="#fff">DECLARE</text>
+        <rect x="150" y="80" width="130" height="44" rx="22" fill="#16213e"/><text x="215" y="106" fill="#fff">EN_INSTRUCTION</text>
+        <rect x="310" y="80" width="150" height="44" rx="22" fill="#c43e00"/><text x="385" y="106" fill="#fff">EXPERTISE_EN_COURS</text>
+        <rect x="490" y="80" width="160" height="44" rx="22" fill="#e65100"/><text x="570" y="106" fill="#fff">EXPERTISE_TERMINEE</text>
+        <rect x="680" y="80" width="96" height="44" rx="22" fill="#1e8e5a"/><text x="728" y="106" fill="#fff">ACCEPTE</text>
+        <rect x="800" y="80" width="100" height="44" rx="22" fill="#1e8e5a"/><text x="850" y="106" fill="#fff">INDEMNISE</text>
+        <rect x="920" y="80" width="70" height="44" rx="22" fill="#5d5a6b"/><text x="955" y="106" fill="#fff">CLOS</text>
+        <rect x="420" y="190" width="110" height="44" rx="22" fill="#c62828"/><text x="475" y="216" fill="#fff">REFUSE</text>
+      </g>
+      <g stroke="#1a1a2e" stroke-width="1.6" fill="none" marker-end="url(#sm)">
+        <line x1="120" y1="102" x2="148" y2="102"/>
+        <line x1="280" y1="102" x2="308" y2="102"/>
+        <line x1="460" y1="102" x2="488" y2="102"/>
+        <line x1="650" y1="102" x2="678" y2="102"/>
+        <line x1="776" y1="102" x2="798" y2="102"/>
+        <line x1="900" y1="102" x2="918" y2="102"/>
+        <path d="M215,80 C260,20 680,20 720,78"/>
+        <path d="M65,124 C80,200 300,212 418,212"/>
+        <path d="M215,124 C240,180 330,205 418,207"/>
+        <path d="M570,124 C560,170 545,200 532,205"/>
+        <path d="M530,220 C700,240 930,220 955,126"/>
+      </g>
+      <g font-size="10.5" fill="#5d5a6b">
+        <text x="470" y="34" text-anchor="middle">accord direct sans expertise</text>
+        <text x="790" y="196" text-anchor="middle">un refus ne peut qu'être clos</text>
+        <text x="474" y="70" text-anchor="middle" font-size="9.5" fill="#9a3000" class="h">dépôt d'expertise (partenaire) ↓</text>
+      </g>
+    </svg>
+    <figcaption><b>Machine à états.</b> Chaque flèche est une transition autorisée (<code>src/domain/workflow.js</code>).
+    Règle du service Indemnisation : <strong>seul un dossier accepté peut être indemnisé</strong>.</figcaption>
+  </figure>
+
+  <h3>Les données ont une histoire</h3>
+  <p>La base de production a été construite par <strong>10 migrations</strong> successives sur 5 ans. Le dump fourni est à la
+  version 9 ; la migration 10 n'a jamais été jouée en production. Lisez les fichiers de <code>migrations/</code>
+  <strong>dans l'ordre</strong>, avec leurs commentaires : ils racontent des décisions qui expliquent plusieurs bugs.</p>
+</section>
+
+<!-- ================================================================ 06 MISSION 0 -->
+<section class="chap" id="m0">
+  <div class="chap-head"><span class="num">06</span><h2>Mission 0 · Prise en main</h2><span class="pill day">Jour 1 · matin</span></div>
+
+  <p class="lede">Objectif : avoir l'application qui tourne sur votre poste <em>avec les données de production</em>,
+  voir le connecteur partenaire échouer, et savoir reproduire chaque ticket.</p>
+
+  <ol class="steps">
+    <li><strong>Créer le dépôt de l'équipe.</strong> Un membre crée un dépôt GitHub <em>privé</em> à partir du code fourni,
+    invite les coéquipiers et le formateur. Dans <em>Settings → Branches</em>, protégez <code>main</code> :
+    Pull Request obligatoire, 1 approbation, pas de push direct (les status checks seront ajoutés en mission 5).</li>
+    <li><strong>Premier commit d'équipe.</strong> Créez <code>docs/JOURNAL.md</code> (composition de l'équipe, rôles, objectifs du jour) via une PR.</li>
+    <li><strong>Lancer la stack « comme Thomas ».</strong>
+<pre><code>npm install
+docker compose up -d db
+bash db/restore.sh              <span class="c"># restaure le dump de production</span>
+npm run migrate                 <span class="c"># joue la migration 10</span>
+npm start                       <span class="c"># http://localhost:3000</span></code></pre>
+    Sous Windows, utilisez Git Bash ou WSL pour les scripts <code>.sh</code>.</li>
+    <li><strong>Explorer.</strong> Formulaire (<code>/</code>), back-office (<code>/backoffice.html</code>), <code>/health</code>.
+    Comptes de démonstration dans <code>db/README.md</code>. Explorez la base :
+    <code>docker compose exec db psql -U sinistreflow</code> puis <code>\dt</code>, <code>\d claims</code>…</li>
+    <li><strong>Lancer le connecteur partenaire</strong> et constater l'échec. Copiez la sortie dans le journal : c'est votre « état zéro ».
+<pre><code>export EXPERTAUTO_API_KEY=ea_live_7f3c9a1e5b2d4f60   <span class="c"># fournie par MutuAlp (voir .env)</span>
+python3 partner-client/expertauto_sync.py ; echo "code retour : $?"</code></pre></li>
+    <li><strong>Lancer les tests existants</strong> (<code>npm test</code>). Ils passent… Est-ce une bonne nouvelle ?</li>
+    <li><strong>Cartographier.</strong> Dans <code>docs/CARTOGRAPHIE.md</code> : un schéma de qui appelle quoi, la liste des tables,
+    et un tableau <em>ticket → reproduit ? → commande de reproduction (curl, écran) → fichier suspect</em>.</li>
+  </ol>
+
+  <div class="callout tip">
+    <p><strong>Reproduire avant de corriger.</strong> Un bug que vous ne savez pas reproduire, vous ne saurez pas prouver que vous l'avez corrigé.
+    Gardez vos commandes <code>curl</code> : elles deviendront vos tests d'intégration.</p>
+<pre><code>curl -s -H "Content-Type: application/json" \
+  -d '{"contractNumber":"MA-AUTO-001001","email":"camille.durand@example.test"}' \
+  http://localhost:3000/api/public/contracts/verify</code></pre>
+  </div>
+
+  <h4>✅ Point de contrôle</h4>
+  <ul class="checklist">
+    <li>Dépôt GitHub créé, <code>main</code> protégée, formateur invité</li>
+    <li>Application lancée localement avec le dump (425 dossiers visibles en base)</li>
+    <li>Sortie du connecteur ExpertAuto (en échec) consignée dans le journal</li>
+    <li>Cartographie et tableau de reproduction des tickets commencés</li>
+  </ul>
+</section>
+
+<!-- ================================================================ 07 MISSION 1 -->
+<section class="chap" id="m1">
+  <div class="chap-head"><span class="num">07</span><h2>Mission 1 · Corriger les bugs</h2><span class="pill day">Jours 1 → 2</span></div>
+
+  <p class="lede">Les tickets sont rédigés par des utilisateurs : ils décrivent ce qu'ils <em>voient</em>, jamais la cause.
+  Votre travail est de remonter du symptôme à la cause, de la prouver par un test, puis de la corriger, proprement, un ticket à la fois.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 230" role="img" aria-label="Cycle de correction d'un bug">
+      <defs>
+        <marker id="bc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5d5a6b"/></marker>
+      </defs>
+      <g class="h" font-size="13" text-anchor="middle">
+        <path d="M10,40 h105 l18,32 l-18,32 h-105 l18,-32 z" fill="#1a1a2e"/><text x="70" y="70" fill="#fff">1 · Reproduire</text><text x="70" y="88" fill="#ffdfce" font-size="10">curl · écran · psql</text>
+        <path d="M133,40 h105 l18,32 l-18,32 h-105 l18,-32 z" fill="#16213e"/><text x="193" y="70" fill="#fff">2 · Localiser</text><text x="193" y="88" fill="#ffdfce" font-size="10">logs · debugger</text>
+        <path d="M256,40 h105 l18,32 l-18,32 h-105 l18,-32 z" fill="#c62828"/><text x="316" y="70" fill="#fff">3 · Test rouge</text><text x="316" y="88" fill="#ffd9d9" font-size="10">il doit échouer</text>
+        <path d="M379,40 h105 l18,32 l-18,32 h-105 l18,-32 z" fill="#c43e00"/><text x="439" y="70" fill="#fff">4 · Corriger</text><text x="439" y="88" fill="#ffdfce" font-size="10">le minimum utile</text>
+        <path d="M502,40 h105 l18,32 l-18,32 h-105 l18,-32 z" fill="#1e8e5a"/><text x="562" y="70" fill="#fff">5 · Test vert</text><text x="562" y="88" fill="#d9f2e4" font-size="10">+ toute la suite</text>
+        <path d="M625,40 h105 l18,32 l-18,32 h-105 l18,-32 z" fill="#6b43ad"/><text x="685" y="70" fill="#fff">6 · Commit</text><text x="685" y="88" fill="#eee5fa" font-size="10">message exact</text>
+        <path d="M748,40 h105 l18,32 l-18,32 h-105 l18,-32 z" fill="#2563a8"/><text x="808" y="70" fill="#fff">7 · PR + CI</text><text x="808" y="88" fill="#e5effa" font-size="10">relecture binôme</text>
+        <path d="M871,40 h110 l0,64 h-110 l18,-32 z" fill="#ff754c"/><text x="932" y="70" fill="#fff">8 · Merge</text><text x="932" y="88" fill="#fff" font-size="10">ticket fermé</text>
+      </g>
+      <path d="M562,112 C562,190 70,190 70,112" fill="none" stroke="#5d5a6b" stroke-width="1.6" stroke-dasharray="5 5" marker-end="url(#bc)"/>
+      <text x="316" y="196" text-anchor="middle" font-size="12" fill="#5d5a6b">un autre test casse ? une régression : on recommence, sans commit</text>
+      <rect x="250" y="206" width="132" height="20" rx="10" fill="#fdeaea"/>
+      <text x="316" y="220" text-anchor="middle" font-size="11" fill="#c62828" class="h">sans test rouge, pas de preuve</text>
+    </svg>
+    <figcaption><b>La boucle de correction.</b> Le test est écrit <em>avant</em> le correctif et doit échouer pour la bonne raison
+    (le symptôme du ticket). C'est la seule preuve que votre correctif corrige bien <em>ce</em> bug, et la garantie qu'il ne reviendra pas.</figcaption>
+  </figure>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>🔎 Outils pour localiser</h4>
+      <ul>
+        <li>Les logs de l'application (et leur absence !)</li>
+        <li><code>node --inspect src/index.js</code> + Chrome DevTools, ou le débogueur VS Code</li>
+        <li>Les DevTools du navigateur, onglet <em>Network</em></li>
+        <li><code>psql</code> : <code>\d claims</code>, <code>SELECT ...</code> sur les données réelles</li>
+        <li><code>git log -p fichier</code>, <code>git blame</code> : qui a changé quoi, et pourquoi</li>
+        <li>Les commentaires des migrations SQL</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>🧭 Conseils d'organisation</h4>
+      <ul>
+        <li>Répartissez les tickets dans un tableau <em>GitHub Projects</em> (À faire / En cours / En revue / Terminé).</li>
+        <li>Certains bugs en masquent d'autres : SF-114 rend tous les codes d'erreur faux, SF-102 cache SF-103…</li>
+        <li>Les tickets signalés 🔴 bloquent le partenaire : traitez-les en premier.</li>
+        <li>Les étoiles indiquent la difficulté estimée (★ à ★★★).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout prof">
+    <p><strong>Les indices sont repliés.</strong> Ouvrez-les seulement après avoir vraiment cherché. Notez dans le journal
+    les indices ouverts : cela fait partie de l'honnêteté professionnelle.</p>
+  </div>
+
+  <h3 id="lot-a">Lot A · Application &amp; API</h3>
+
+  <div class="ticket">
+    <header><span class="id">SF-101</span><span class="ttl">Le connecteur ExpertAuto est refusé</span><span class="pill red">Bloquant</span><span class="stars">★☆☆</span></header>
+    <blockquote>Tous nos appels à vos API v1/v2/v3 échouent (erreur 500, message « Clé API manquante »). Nous envoyons pourtant bien l'en-tête <code>X-API-Key</code>. — DSI ExpertAuto</blockquote>
+    <span class="commit">fix(SF-101): lire l'en-tête X-API-Key sans tenir compte de la casse</span>
+    <details class="hint"><summary>Indice 1</summary><p>Ajoutez temporairement <code>console.log(req.headers)</code> dans le middleware et observez les clés de l'objet.</p></details>
+    <details class="hint"><summary>Indice 2</summary><p>La RFC HTTP dit que les noms d'en-têtes sont insensibles à la casse. Que fait Node.js pour que ce soit simple à gérer ? Qu'offre Express pour lire un en-tête ?</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-102</span><span class="ttl">« La date du sinistre ne peut pas être dans le futur »</span><span class="pill red">Bloquant</span><span class="stars">★★☆</span></header>
+    <blockquote>Impossible de déclarer un sinistre survenu hier ou avant-hier, le formulaire répond que la date est dans le futur. Les sinistres plus anciens passent. ExpertAuto signale le même message sur la date de rendez-vous d'expertise.</blockquote>
+    <span class="commit">fix(SF-102): corriger le mois dans parseIsoDate</span>
+    <details class="hint"><summary>Indice 1</summary><p>Test unitaire : <code>parseIsoDate('2026-03-15').getMonth()</code> devrait valoir… combien ? Lisez la doc MDN du constructeur <code>Date</code>.</p></details>
+    <details class="hint"><summary>Indice 2</summary><p>Une fois corrigé, est-ce que <code>parseIsoDate('2026-02-31')</code> renvoie bien <code>null</code> comme le promet son commentaire ?</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-103</span><span class="ttl">Tous les dossiers sont « déclaration tardive »</span><span class="pill">Majeur</span><span class="stars">★☆☆</span></header>
+    <blockquote>Un dégât des eaux survenu la veille est signalé « déclaration tardive » alors que l'assuré a 5 jours pour déclarer (2 jours pour un vol). <em>(Peut n'apparaître qu'une fois SF-102 corrigé.)</em></blockquote>
+    <span class="commit">fix(SF-103): calculer le délai de déclaration en jours et non en heures</span>
+    <details class="hint"><summary>Indice</summary><p>Testez les cas limites : J+5 pile, J+6, un vol à J+2 et J+3. Combien de millisecondes dans un jour ?</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-104</span><span class="ttl">Erreur à l'envoi de la déclaration</span><span class="pill red">Bloquant</span><span class="stars">★★☆</span></header>
+    <blockquote>Plus AUCUNE déclaration en ligne n'aboutit : « duplicate key value violates unique constraint ». En recette (base vide) ça marchait.</blockquote>
+    <span class="commit">fix(SF-104): générer les références de dossier avec claim_reference_seq</span>
+    <details class="hint"><summary>Indice 1</summary><p>« Sur base vide ça marche » : comparez dans le dump le nombre de dossiers et le plus grand numéro de référence. Lisez <code>db/README.md</code>.</p></details>
+    <details class="hint"><summary>Indice 2</summary><p>Relisez les migrations : l'une d'elles avait préparé la solution, jamais branchée. Pourquoi cette solution est-elle aussi sûre quand deux assurés valident <em>au même instant</em> ?</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-105</span><span class="ttl">Un dossier refusé a été indemnisé</span><span class="pill">Majeur</span><span class="stars">★☆☆</span></header>
+    <blockquote>Le back-office propose le bouton « → INDEMNISE » sur les dossiers refusés. Le test automatique de l'ancienne équipe valide pourtant ce comportement ?! — Audit interne</blockquote>
+    <span class="commit">fix(SF-105): interdire la transition REFUSE vers INDEMNISE</span>
+    <details class="hint"><summary>Indice</summary><p>Un test peut avoir tort : il encode ce que quelqu'un <em>croyait</em> être la règle. La référence est la règle métier (<code>docs/ARCHITECTURE.md</code>). Corrigez le test, et expliquez-le dans la description de la PR.</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-106</span><span class="ttl">Montants d'indemnité aberrants</span><span class="pill red">Bloquant</span><span class="stars">★★☆</span></header>
+    <blockquote>Expertise à 1 000 €, franchise 150 € : SinistreFlow calcule 998,50 € au lieu de 850 €. Sur un bris de glace à 120 € avec 150 € de franchise, l'indemnité est <strong>négative</strong>.</blockquote>
+    <span class="commit">fix(SF-106): convertir la franchise en centimes et borner l'indemnité à zéro</span>
+    <details class="hint"><summary>Indice</summary><p>Quelle est l'unité de chaque colonne utilisée dans le calcul ? (<code>docs/ARCHITECTURE.md</code>, section modèle de données). Pour l'argent, on ne mélange jamais les unités.</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-107</span><span class="ttl">Listes vides ou incomplètes</span><span class="pill">Majeur</span><span class="stars">★☆☆</span></header>
+    <blockquote>Back-office, filtre EXPERTISE_EN_COURS : la liste est vide alors que le compteur annonce 14 dossiers. ExpertAuto ne reçoit plus aucun dossier à expertiser.</blockquote>
+    <span class="commit">fix(SF-107): corriger le calcul de l'offset de pagination</span>
+    <details class="hint"><summary>Indice</summary><p>La doc de l'API dit que les pages commencent à 1. Calculez à la main l'<code>OFFSET</code> SQL pour <code>page=1&amp;limit=20</code>.</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-108</span><span class="ttl">Recherche back-office : erreur 500 + alerte sécurité</span><span class="pill red">Sécurité</span><span class="stars">★★☆</span></header>
+    <blockquote>Rechercher l'assurée « D'Almeida » provoque <em>syntax error at or near "Almeida"</em>. Le pentest a obtenu la liste complète des dossiers avec <code>%' OR 1=1 --</code>. — RSSI</blockquote>
+    <span class="commit">fix(SF-108): paramétrer la requête de recherche du back-office</span>
+    <details class="hint"><summary>Indice 1</summary><p>Ne construisez jamais une requête SQL en concaténant une saisie utilisateur. Cherchez « requêtes paramétrées » dans la doc de node-postgres.</p></details>
+    <details class="hint"><summary>Indice 2</summary><p>Une fois paramétrée, que renvoie une recherche sur <code>%</code> ? Les caractères spéciaux de <code>LIKE</code> doivent-ils être interprétés quand ils viennent de l'utilisateur ?</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-109</span><span class="ttl">Immatriculation absente dans l'API</span><span class="pill red">Bloquant · Architecture</span><span class="stars">★★★</span></header>
+    <blockquote>Pour tous les dossiers récents, <code>immatriculation</code> (v1) et <code>vehiclePlate</code> (v2) valent <code>null</code>. En v3 la plaque est bien là. — <strong>CTO</strong> : « On supprime v1 et v2, tout le monde passe en v3, problème réglé. »</blockquote>
+    <span class="commit">fix(SF-109): remonter l'immatriculation depuis vehicles dans les API v1 et v2</span>
+    <p style="margin:10px 0 0">➡️ Ce ticket fait l'objet de la <a href="#m2">Mission 2</a> (analyse + ADR obligatoire).</p>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-110</span><span class="ttl">Montants renvoyés sous forme de texte</span><span class="pill">Majeur</span><span class="stars">★★☆</span></header>
+    <blockquote>En v2, <code>estimatedAmountCents</code> arrive sous la forme <code>"125050"</code> (chaîne) et non <code>125050</code> (nombre). Notre validation de schéma rejette la réponse. — ExpertAuto, équipe mobile</blockquote>
+    <span class="commit">fix(SF-110): renvoyer les montants BIGINT en nombres entiers</span>
+    <details class="hint"><summary>Indice 1</summary><p>Pourquoi la v3, elle, renvoie-t-elle des nombres ? Comparez les deux sérialiseurs. Mais corriger chaque sérialiseur un par un est-il la bonne approche ?</p></details>
+    <details class="hint"><summary>Indice 2</summary><p>Cherchez « pg-types » et le type <code>BIGINT</code> (OID 20) dans la doc de node-postgres. Pourquoi la librairie fait-elle ce choix par défaut ? Est-ce un risque pour <em>nos</em> montants ?</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-111</span><span class="ttl">Les dates reculent d'un jour</span><span class="pill">Majeur</span><span class="stars">★★★</span></header>
+    <blockquote>Nous déposons un rapport avec un rendez-vous le 02/10, la relecture du dossier affiche le 01/10. L'écran de confirmation du formulaire affiche aussi la veille. <em>(Le développeur qui a testé sur la CI dit qu'il ne reproduit pas.)</em></blockquote>
+    <span class="commit">fix(SF-111): supprimer le décalage de fuseau horaire sur les dates</span>
+    <details class="hint"><summary>Indice 1</summary><p>« Ça marche sur la CI » : les serveurs de CI tournent en UTC. Quel fuseau impose le <code>Dockerfile</code> ? Essayez <code>TZ=UTC npm start</code> puis <code>TZ=Europe/Paris npm start</code> (PowerShell : <code>$env:TZ="Europe/Paris"</code>).</p></details>
+    <details class="hint"><summary>Indice 2</summary><p>Une colonne SQL <code>DATE</code> n'a ni heure ni fuseau. En quoi node-postgres la transforme-t-il ? Et que fait <code>toISOString()</code> d'un minuit heure de Paris ?</p></details>
+    <details class="hint"><summary>Indice 3</summary><p>Votre test doit échouer <em>partout</em>, y compris dans la CI en UTC : fixez le fuseau dans le test (<code>process.env.TZ</code>) ou dans le job.</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-112</span><span class="ttl">« Aucun contrat ne correspond »</span><span class="pill">Majeur</span><span class="stars">★☆☆</span></header>
+    <blockquote>Mme Camille Durand (contrat MA-AUTO-001001) ne peut pas s'identifier avec <code>camille.durand@example.test</code>, l'adresse de son contrat. Environ un quart des assurés seraient concernés.</blockquote>
+    <span class="commit">fix(SF-112): comparer l'email de l'assuré sans tenir compte de la casse</span>
+    <details class="hint"><summary>Indice</summary><p>Regardez comment l'email de ce contrat est <em>stocké</em> en base. Peut-on corriger sans modifier les données de production ? (Bonus : un index adapté à la nouvelle requête.)</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-113</span><span class="ttl">Montant estimé faux</span><span class="pill">Mineur</span><span class="stars">★★☆</span></header>
+    <blockquote>L'assuré saisit <code>1 250,50</code> € et le dossier affiche 1,00 €. Pour <code>19.99</code> on obtient 19,98 €.</blockquote>
+    <span class="commit">fix(SF-113): accepter les montants saisis au format français</span>
+    <details class="hint"><summary>Indice</summary><p>Dans la console Node : <code>parseFloat("1 250,50")</code> et <code>19.99 * 100</code>. Les nombres à virgule flottante sont-ils faits pour l'argent ? Pensez aussi à l'espace insécable copié depuis un PDF.</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-114</span><span class="ttl">Erreurs 500 partout + fuite d'informations</span><span class="pill red">Sécurité</span><span class="stars">★★☆</span></header>
+    <blockquote>Toutes les erreurs remontent en HTTP 500, même un dossier inexistant ou une saisie invalide. Les réponses contiennent la stack trace complète (chemins du serveur, versions des librairies). — RSSI</blockquote>
+    <span class="commit">fix(SF-114): renvoyer le bon code HTTP et masquer la stack trace</span>
+    <details class="hint"><summary>Indice 1</summary><p>Comparez la propriété définie dans <code>src/domain/errors.js</code> et celle lue dans le gestionnaire d'erreurs.</p></details>
+    <details class="hint"><summary>Indice 2</summary><p>Qui doit voir le détail technique d'une erreur 500 ? Le client… ou les logs de l'équipe ?</p></details>
+  </div>
+
+  <div class="ticket">
+    <header><span class="id">SF-115</span><span class="ttl">/health dit « UP » alors que tout est en panne</span><span class="pill">Mineur</span><span class="stars">★☆☆</span></header>
+    <blockquote>Lors de la panne PostgreSQL du 14/09, <code>/health</code> répondait <code>{"status":"UP"}</code> pendant que toutes les pages étaient en erreur. Le load-balancer n'a rien détecté. — Exploitation</blockquote>
+    <span class="commit">fix(SF-115): vérifier la base de données dans le endpoint /health</span>
+    <details class="hint"><summary>Indice</summary><p>Quel code HTTP signifie « temporairement indisponible » ? Renseignez-vous sur la différence entre sonde de <em>liveness</em> et de <em>readiness</em>. Testez avec <code>docker compose stop db</code>.</p></details>
+  </div>
+
+  <h3 id="lot-b">Lot B · Front</h3>
+
+  <div class="ticket front">
+    <header><span class="id">SF-301</span><span class="ttl">Impossible de déclarer un vol ou un cambriolage</span><span class="pill red">Bloquant</span><span class="stars">★☆☆</span></header>
+    <blockquote>Pour un cambriolage, le formulaire refuse l'envoi : « Le numéro de dépôt de plainte est obligatoire pour un vol », alors que l'assuré l'a bien saisi.</blockquote>
+    <span class="commit">fix(SF-301): transmettre le numéro de plainte saisi dans le formulaire</span>
+    <details class="hint"><summary>Indice</summary><p>DevTools → onglet <em>Network</em> → la requête <code>POST /api/public/claims</code> : que contient le corps envoyé ? C'est un bug qu'aucun test unitaire ni d'intégration ne peut voir : il faut un test End-to-End.</p></details>
+  </div>
+</section>
+
+<!-- ================================================================ 08 MISSION 2 -->
+<section class="chap" id="m2">
+  <div class="chap-head"><span class="num">08</span><h2>Mission 2 · Le dilemme des versions (SF-109)</h2><span class="pill day">Jour 2</span></div>
+
+  <p class="lede">Un champ ne remonte plus dans deux versions de l'API. Le CTO veut profiter de l'occasion pour supprimer
+  les anciennes versions. Avant de toucher au code, vous devez <strong>comprendre</strong>, <strong>décider</strong>
+  et <strong>documenter</strong> la décision : c'est ce que fait une équipe DevOps responsable de sa production.</p>
+
+  <h3>1. Comprendre la cause : les données ont bougé, pas tout le code</h3>
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 330" role="img" aria-label="Migration 8 et lecture des versions">
+      <defs>
+        <marker id="mg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e8e5a"/></marker>
+        <marker id="mr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c62828"/></marker>
+        <marker id="mn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a1a2e"/></marker>
+      </defs>
+      <!-- timeline -->
+      <line x1="30" y1="40" x2="970" y2="40" stroke="#1a1a2e" stroke-width="2"/>
+      <g font-size="11" class="h" fill="#1a1a2e">
+        <circle cx="90" cy="40" r="6" fill="#1a1a2e"/><text x="90" y="26" text-anchor="middle">2021 · v1</text>
+        <circle cx="300" cy="40" r="6" fill="#1a1a2e"/><text x="300" y="26" text-anchor="middle">2023 · v2</text>
+        <circle cx="520" cy="40" r="9" fill="#c43e00"/><text x="520" y="24" text-anchor="middle" fill="#c43e00">mars 2025 · migration 8 + v3</text>
+        <circle cx="900" cy="40" r="6" fill="#1a1a2e"/><text x="900" y="26" text-anchor="middle">aujourd'hui</text>
+      </g>
+      <!-- tables -->
+      <rect x="40" y="80" width="400" height="120" rx="12" fill="#fff" stroke="#1a1a2e"/>
+      <rect x="40" y="80" width="400" height="30" rx="12" fill="#1a1a2e"/><rect x="40" y="98" width="400" height="12" fill="#1a1a2e"/>
+      <text x="56" y="100" class="h m" fill="#fff" font-size="13">claims</text>
+      <g class="m" font-size="12" fill="#1a1a2e">
+        <text x="56" y="132">id · reference · claim_type · incident_date · …</text>
+        <rect x="52" y="146" width="376" height="26" rx="6" fill="#fdeaea"/>
+        <text x="60" y="164" fill="#c62828">immatriculation   ← OBSOLÈTE depuis la migration 8</text>
+        <text x="56" y="190" font-size="11" fill="#5d5a6b">remplie avant 03/2025 · NULL après</text>
+      </g>
+      <rect x="560" y="80" width="400" height="120" rx="12" fill="#fff" stroke="#1e8e5a" stroke-width="2"/>
+      <rect x="560" y="80" width="400" height="30" rx="12" fill="#1e8e5a"/><rect x="560" y="98" width="400" height="12" fill="#1e8e5a"/>
+      <text x="576" y="100" class="h m" fill="#fff" font-size="13">vehicles (migration 8)</text>
+      <g class="m" font-size="12" fill="#1a1a2e">
+        <text x="576" y="132">claim_id · brand · model</text>
+        <rect x="572" y="146" width="376" height="26" rx="6" fill="#e3f4ea"/>
+        <text x="580" y="164" fill="#1e8e5a">plate_number   ← source de vérité</text>
+        <text x="576" y="190" font-size="11" fill="#5d5a6b">reprise de l'existant + tous les nouveaux dossiers</text>
+      </g>
+      <path d="M440,140 C490,140 510,140 558,140" stroke="#1a1a2e" stroke-width="2" fill="none" marker-end="url(#mn)" stroke-dasharray="6 4"/>
+      <text x="500" y="130" text-anchor="middle" font-size="10" fill="#1a1a2e" class="h">copie (INSERT … SELECT)</text>
+      <!-- versions -->
+      <g class="h" font-size="13" text-anchor="middle">
+        <rect x="90" y="250" width="150" height="50" rx="12" fill="#ffdfce"/><text x="165" y="280" fill="#9a3000">API v1</text>
+        <rect x="290" y="250" width="150" height="50" rx="12" fill="#ffdfce"/><text x="365" y="280" fill="#9a3000">API v2</text>
+        <rect x="690" y="250" width="150" height="50" rx="12" fill="#ffdfce"/><text x="765" y="280" fill="#9a3000">API v3</text>
+      </g>
+      <path d="M165,250 C165,225 200,205 220,173" stroke="#c62828" stroke-width="2.4" fill="none" marker-end="url(#mr)"/>
+      <path d="M365,250 C365,225 330,205 300,173" stroke="#c62828" stroke-width="2.4" fill="none" marker-end="url(#mr)"/>
+      <path d="M765,250 C765,225 765,205 765,173" stroke="#1e8e5a" stroke-width="2.4" fill="none" marker-end="url(#mg)"/>
+      <text x="265" y="320" text-anchor="middle" font-size="12" fill="#c62828" class="h">lisent encore l'ancienne colonne → null</text>
+      <text x="765" y="320" text-anchor="middle" font-size="12" fill="#1e8e5a" class="h">lit la nouvelle table → OK</text>
+    </svg>
+    <figcaption><b>Pourquoi le champ « disparaît ».</b> Une migration a déplacé une donnée ; une seule version de l'API a été adaptée.
+    Les anciens dossiers fonctionnent encore (la colonne y est remplie), les nouveaux non : le bug est <em>dépendant des données</em>
+    et ne se voit qu'avec le dump de production. Vérifiez ce schéma par vous-mêmes dans le code et en SQL.</figcaption>
+  </figure>
+
+  <h3>2. Deux options sur la table</h3>
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 330" role="img" aria-label="Deux options de versioning">
+      <defs>
+        <marker id="op" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a1a2e"/></marker>
+      </defs>
+      <rect x="10" y="10" width="480" height="310" rx="16" fill="#faf9f5" stroke="#e7e2da"/>
+      <rect x="510" y="10" width="480" height="310" rx="16" fill="#faf9f5" stroke="#e7e2da"/>
+      <text x="250" y="42" text-anchor="middle" class="h" font-size="16" fill="#1a1a2e">Option A · « On ne garde que la v3 »</text>
+      <text x="750" y="42" text-anchor="middle" class="h" font-size="16" fill="#1a1a2e">Option B · « On garde toutes les versions »</text>
+      <!-- A -->
+      <g font-size="12" class="h" text-anchor="middle">
+        <rect x="40" y="70" width="120" height="36" rx="8" fill="#fff" stroke="#c43e00" stroke-width="1.6"/><text x="100" y="93" fill="#9a3000">ExpertAuto</text>
+        <rect x="40" y="118" width="120" height="36" rx="8" fill="#fff" stroke="#e7e2da"/><text x="100" y="141">Appli mobile</text>
+        <rect x="40" y="166" width="120" height="36" rx="8" fill="#fff" stroke="#e7e2da"/><text x="100" y="189">AssurCompare</text>
+        <rect x="210" y="70" width="110" height="36" rx="8" fill="#f0eee9" stroke="#bdb8ae" stroke-dasharray="5 4"/><text x="265" y="93" fill="#8f8a80">/api/v1</text>
+        <rect x="210" y="118" width="110" height="36" rx="8" fill="#f0eee9" stroke="#bdb8ae" stroke-dasharray="5 4"/><text x="265" y="141" fill="#8f8a80">/api/v2</text>
+        <rect x="210" y="166" width="110" height="36" rx="8" fill="#ffdfce"/><text x="265" y="189" fill="#9a3000">/api/v3</text>
+        <rect x="360" y="118" width="110" height="84" rx="10" fill="#c43e00"/><text x="415" y="156" fill="#fff">code v3</text><text x="415" y="174" fill="#ffdfce" font-size="10">un seul format</text>
+      </g>
+      <g stroke="#1a1a2e" stroke-width="1.4" fill="none" marker-end="url(#op)">
+        <line x1="160" y1="86" x2="208" y2="86"/><path d="M160,92 C185,92 185,134 208,134"/><path d="M160,98 C190,98 190,180 208,180"/>
+        <line x1="160" y1="138" x2="208" y2="138"/><path d="M160,184 C190,184 190,92 208,92"/>
+        <line x1="320" y1="184" x2="358" y2="174"/>
+      </g>
+      <text x="250" y="240" text-anchor="middle" font-size="13" fill="#1a1a2e" class="h">+ une seule version à maintenir</text>
+      <text x="250" y="262" text-anchor="middle" font-size="13" fill="#1a1a2e" class="h">? que reçoivent les consommateurs de v1 et v2 ?</text>
+      <text x="250" y="284" text-anchor="middle" font-size="13" fill="#1a1a2e" class="h">? et si l'on « redirige » v1 et v2 vers la v3 ?</text>
+      <!-- B -->
+      <g font-size="12" class="h" text-anchor="middle">
+        <rect x="540" y="70" width="120" height="36" rx="8" fill="#fff" stroke="#c43e00" stroke-width="1.6"/><text x="600" y="93" fill="#9a3000">ExpertAuto</text>
+        <rect x="540" y="118" width="120" height="36" rx="8" fill="#fff" stroke="#e7e2da"/><text x="600" y="141">Appli mobile</text>
+        <rect x="540" y="166" width="120" height="36" rx="8" fill="#fff" stroke="#e7e2da"/><text x="600" y="189">AssurCompare</text>
+        <rect x="700" y="70" width="110" height="36" rx="8" fill="#ffdfce"/><text x="755" y="86" fill="#9a3000">/api/v1</text><text x="755" y="100" font-size="9" fill="#9a3000">format v1</text>
+        <rect x="700" y="118" width="110" height="36" rx="8" fill="#ffdfce"/><text x="755" y="134" fill="#9a3000">/api/v2</text><text x="755" y="148" font-size="9" fill="#9a3000">format v2</text>
+        <rect x="700" y="166" width="110" height="36" rx="8" fill="#ffdfce"/><text x="755" y="182" fill="#9a3000">/api/v3</text><text x="755" y="196" font-size="9" fill="#9a3000">format v3</text>
+        <rect x="850" y="70" width="120" height="132" rx="10" fill="#1e8e5a"/><text x="910" y="128" fill="#fff">lecture</text><text x="910" y="146" fill="#fff">commune</text><text x="910" y="166" fill="#d9f2e4" font-size="10">une source de vérité</text>
+      </g>
+      <g stroke="#1a1a2e" stroke-width="1.4" fill="none" marker-end="url(#op)">
+        <line x1="660" y1="86" x2="698" y2="86"/><path d="M660,92 C680,92 680,134 698,134"/><path d="M660,98 C684,98 684,180 698,180"/>
+        <line x1="660" y1="138" x2="698" y2="138"/><path d="M660,184 C684,184 684,92 698,92"/>
+        <line x1="810" y1="88" x2="848" y2="100"/><line x1="810" y1="136" x2="848" y2="136"/><line x1="810" y1="184" x2="848" y2="172"/>
+      </g>
+      <text x="750" y="240" text-anchor="middle" font-size="13" fill="#1a1a2e" class="h">+ aucun consommateur n'est impacté</text>
+      <text x="750" y="262" text-anchor="middle" font-size="13" fill="#1a1a2e" class="h">? combien coûte la maintenance de 3 formats ?</text>
+      <text x="750" y="284" text-anchor="middle" font-size="13" fill="#1a1a2e" class="h">? comment retirer un jour une version ?</text>
+    </svg>
+    <figcaption><b>À vous de trancher.</b> Les deux options sont défendables sur le papier. Votre décision doit s'appuyer sur des
+    <strong>faits</strong> : qui consomme quoi (<code>docs/API.md</code>), qui peut modifier son code, en combien de temps, ce que dit le contrat
+    avec le partenaire… et ce que fera le connecteur ExpertAuto, qui ne sera pas modifié.</figcaption>
+  </figure>
+
+  <h3>3. Notions à maîtriser</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4>Changement cassant (breaking change)</h4>
+      <p>Toute modification qui peut faire échouer un client existant <em>sans qu'il ait rien changé</em> : supprimer ou renommer un champ,
+      changer son type (<code>"125050"</code> au lieu de <code>125050</code>…) ou son unité, changer un code de statut, rendre un champ
+      obligatoire, supprimer une route. Un changement cassant impose une <strong>nouvelle version</strong>.</p>
+    </div>
+    <div class="card">
+      <h4>Cycle de vie d'une version</h4>
+      <p><strong>Active</strong> → <strong>Dépréciée</strong> (on prévient : documentation, en-têtes HTTP
+      <code>Deprecation</code> et <code>Sunset</code>, RFC 8594) → <strong>Retirée</strong>, quand on a <em>mesuré</em> qu'il n'y a plus
+      de trafic. On ne retire jamais une version « parce qu'on pense » que personne ne l'utilise.</p>
+    </div>
+    <div class="card">
+      <h4>Tests de contrat</h4>
+      <p>Pour chaque version : la liste exacte des champs, leurs types, leur format. Si un développeur modifie le schéma ou une requête,
+      le test de contrat de la version concernée passe au rouge <em>avant</em> la production. C'est exactement ce qui a manqué en mars 2025.</p>
+    </div>
+    <div class="card">
+      <h4>Architecture Decision Record (ADR)</h4>
+      <p>Un court document versionné avec le code : contexte, options, décision, conséquences. Dans deux ans, quelqu'un se demandera
+      « pourquoi garde-t-on trois versions ? » : la réponse sera dans <code>docs/adr/</code>, pas dans la tête de quelqu'un qui est parti.</p>
+    </div>
+  </div>
+
+  <h3>4. Ce qui est attendu</h3>
+  <ol class="steps">
+    <li><strong>Analyse.</strong> Retrouvez la cause exacte dans le code et prouvez-la en SQL (combien de dossiers concernés ? depuis quand ?).</li>
+    <li><strong>Décision.</strong> Rédigez <code>docs/adr/0001-versioning-api.md</code> avec le modèle ci-dessous (jalon du jour 2).
+    Commit : <code>docs(SF-603): ADR 0001 stratégie de versioning de l'API</code></li>
+    <li><strong>Correctif.</strong> Implémentez la décision. Commit : <code>fix(SF-109): remonter l'immatriculation depuis vehicles dans les API v1 et v2</code></li>
+    <li><strong>Garde-fous.</strong> Tests d'intégration de contrat pour <em>chacune</em> des versions servies, et un test de cohérence :
+    les versions servies décrivent le même dossier de la même façon (plaque, date, montants).</li>
+    <li><strong>Bonus.</strong> En-têtes de dépréciation sur la ou les versions à retirer à terme ; métrique d'usage par version et par partenaire (mission 7).</li>
+  </ol>
+
+<pre><code><span class="c"># docs/adr/0001-versioning-api.md</span>
+# ADR 0001 — Stratégie de versioning de l'API partenaires
+- Statut : proposé | accepté | remplacé par …
+- Date, décideurs, ticket
+
+## Contexte          <span class="c">← les faits : consommateurs, contraintes contractuelles, cause du bug</span>
+## Options étudiées  <span class="c">← au moins 2, avec avantages / inconvénients / risques</span>
+## Décision          <span class="c">← ce qu'on fait, en une phrase, puis le détail</span>
+## Conséquences      <span class="c">← ce que ça coûte, ce que ça impose à l'équipe, le plan pour la suite</span></code></pre>
+
+  <div class="callout danger">
+    <p><strong>Rappel :</strong> le connecteur ExpertAuto ne sera pas modifié. Il doit passer au vert tel quel,
+    dans la CI et sur votre VM. Une décision d'architecture se juge sur ses conséquences en production.</p>
+  </div>
+</section>
+
+<!-- ================================================================ 09 MISSION 3 -->
+<section class="chap" id="m3">
+  <div class="chap-head"><span class="num">09</span><h2>Mission 3 · Les 3 couches de tests</h2><span class="pill day">Jours 1 → 3</span></div>
+
+  <p class="lede">Un test répond à une question : « est-ce que ça marche encore ? ». Plus on monte dans la pyramide, plus la réponse est
+  réaliste… et plus elle est lente, chère et fragile. Une bonne stratégie combine les trois couches.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 420" role="img" aria-label="Pyramide des tests">
+      <defs>
+        <marker id="py" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5d5a6b"/></marker>
+      </defs>
+      <!-- pyramide -->
+      <path d="M500,30 L580,140 L420,140 Z" fill="#6b43ad"/>
+      <path d="M420,146 L584,146 L680,276 L320,276 Z" fill="#2563a8"/>
+      <path d="M316,282 L684,282 L780,410 L220,410 Z" fill="#1e8e5a"/>
+      <g class="h" text-anchor="middle" fill="#fff">
+        <text x="500" y="108" font-size="15">E2E</text>
+        <text x="500" y="124" font-size="10">≥ 5</text>
+        <text x="500" y="210" font-size="17">INTÉGRATION</text>
+        <text x="500" y="230" font-size="11">≥ 20 tests</text>
+        <text x="500" y="346" font-size="19">UNITAIRES</text>
+        <text x="500" y="368" font-size="11">≥ 30 tests · couverture domain/ ≥ 90 %</text>
+      </g>
+      <!-- gauche : quoi -->
+      <g font-size="12">
+        <text x="20" y="70" class="h" fill="#6b43ad" font-size="13">Playwright · vrai navigateur</text>
+        <text x="20" y="88" fill="#1a1a2e">Parcours utilisateur complets :</text>
+        <text x="20" y="104" fill="#1a1a2e">formulaire 4 étapes, back-office</text>
+        <text x="20" y="194" class="h" fill="#2563a8" font-size="13">Jest + Supertest + PostgreSQL</text>
+        <text x="20" y="212" fill="#1a1a2e">Routes HTTP réelles + SQL réel</text>
+        <text x="20" y="228" fill="#1a1a2e">sur le dump de production,</text>
+        <text x="20" y="244" fill="#1a1a2e">contrats des API v1 / v2 / v3</text>
+        <text x="20" y="330" class="h" fill="#1e8e5a" font-size="13">Jest seul</text>
+        <text x="20" y="348" fill="#1a1a2e">Fonctions pures de src/domain/ :</text>
+        <text x="20" y="364" fill="#1a1a2e">dates, montants, workflow,</text>
+        <text x="20" y="380" fill="#1a1a2e">indemnité, règles de déclaration</text>
+      </g>
+      <!-- droite : tickets -->
+      <g font-size="11.5" class="m">
+        <text x="800" y="76" fill="#6b43ad">SF-301 · SF-111 (écran)</text>
+        <text x="800" y="94" fill="#6b43ad">parcours de bout en bout</text>
+        <text x="760" y="200" fill="#2563a8">SF-101 104 107 108 109</text>
+        <text x="760" y="218" fill="#2563a8">SF-110 112 114 115 203</text>
+        <text x="830" y="336" fill="#1e8e5a">SF-102 103 105</text>
+        <text x="830" y="354" fill="#1e8e5a">SF-106 111 113</text>
+      </g>
+      <!-- axes -->
+      <line x1="960" y1="400" x2="960" y2="40" stroke="#5d5a6b" stroke-width="1.6" marker-end="url(#py)"/>
+      <text x="948" y="230" font-size="11" fill="#5d5a6b" transform="rotate(-90 948 230)" text-anchor="middle">réalisme · lenteur · coût · fragilité</text>
+    </svg>
+    <figcaption><b>La pyramide des tests.</b> Beaucoup de tests rapides en bas, quelques tests lents et réalistes en haut. À droite :
+    à quelle couche chaque ticket est le plus naturellement prouvé. Un même bug peut (et parfois doit) être couvert à deux niveaux.</figcaption>
+  </figure>
+
+  <h3>Couche 1 · Tests unitaires</h3>
+  <p>Ils testent une fonction isolée, sans base, sans réseau, sans serveur. Exécution en millisecondes : on les lance à chaque sauvegarde.</p>
+<pre><code><span class="c">// tests/unit/indemnity.test.js</span>
+<span class="k">const</span> { computeIndemnityCents } = require(<span class="s">'../../src/domain/indemnity'</span>);
+
+test(<span class="s">'SF-106 : la franchise (en euros) est déduite en centimes'</span>, () =&gt; {
+  expect(computeIndemnityCents(100000, 150)).toBe(85000);   <span class="c">// 1 000 € - 150 € = 850 €</span>
+});
+
+test.each([[<span class="s">'1250'</span>, 125000], [<span class="s">'19.99'</span>, 1999]])(<span class="s">'%s -&gt; %i centimes'</span>, (saisie, attendu) =&gt; { <span class="c">/* … */</span> });</code></pre>
+  <ul class="checklist">
+    <li>≥ 30 tests sur <code>src/domain/</code>, couverture des lignes ≥ 90 % (<code>jest --coverage</code>)</li>
+    <li>Les cas limites : J+5 / J+6, 29 février, montant nul, franchise &gt; montant, saisie invalide…</li>
+    <li>Fuseau horaire fixé dans les tests qui manipulent des dates (<code>process.env.TZ = 'Europe/Paris'</code>)</li>
+    <li>Le test historique faux (SF-105) corrigé</li>
+  </ul>
+
+  <h3>Couche 2 · Tests d'intégration</h3>
+  <p>Ils démarrent l'application Express <em>en mémoire</em> (Supertest) et lui envoient de vraies requêtes HTTP, qui exécutent du vrai SQL
+  sur une <strong>vraie base PostgreSQL restaurée depuis le dump</strong>. C'est la couche qui détecte les bugs « ça marche sur base vide ».</p>
+<pre><code><span class="c">// tests/integration/api-v2.test.js</span>
+<span class="k">const</span> request = require(<span class="s">'supertest'</span>);
+<span class="k">const</span> app = require(<span class="s">'../../src/app'</span>);          <span class="c">// pas de app.listen : Supertest s'en charge</span>
+<span class="k">const</span> db = require(<span class="s">'../../src/db/pool'</span>);
+afterAll(() =&gt; db.pool.end());
+
+test(<span class="s">'SF-110 : contrat v2, les montants sont des entiers JSON'</span>, <span class="k">async</span> () =&gt; {
+  <span class="k">const</span> res = <span class="k">await</span> request(app).get(<span class="s">'/api/v2/claims/SIN-2026-000450'</span>).set(<span class="s">'X-API-Key'</span>, process.env.EXPERTAUTO_API_KEY);
+  expect(res.status).toBe(200);
+  expect(Number.isInteger(res.body.estimatedAmountCents)).toBe(<span class="k">true</span>);
+});</code></pre>
+  <ul class="checklist">
+    <li>≥ 20 tests, base restaurée depuis le dump puis migrée avant la suite</li>
+    <li>Un test de <strong>contrat</strong> par version d'API servie (liste exacte des champs + types)</li>
+    <li>Codes HTTP : 400, 401, 404, 409 — et jamais de stack trace dans la réponse</li>
+    <li>Toutes les migrations appliquées sur une base <strong>vide</strong> (SF-203)</li>
+    <li>Script <code>npm run test:integration</code> (séparé des unitaires : <code>jest --selectProjects</code> ou deux configs)</li>
+  </ul>
+
+  <h3>Couche 3 · Tests End-to-End</h3>
+  <p>Un vrai navigateur (Chromium piloté par <a href="https://playwright.dev">Playwright</a>) remplit le formulaire comme un assuré.
+  C'est la seule couche qui voit un bug dans le JavaScript du front (SF-301) ou un affichage faux.</p>
+<pre><code>npm install -D @playwright/test &amp;&amp; npx playwright install chromium
+
+<span class="c">// tests/e2e/declaration.spec.js</span>
+test(<span class="s">'un assuré déclare un accident auto'</span>, <span class="k">async</span> ({ page }) =&gt; {
+  <span class="k">await</span> page.goto(<span class="s">'/'</span>);
+  <span class="k">await</span> page.getByLabel(<span class="s">'Numéro de contrat'</span>).fill(<span class="s">'MA-AUTO-001001'</span>);
+  <span class="k">await</span> page.getByLabel(<span class="s">'Adresse email'</span>).fill(<span class="s">'camille.durand@example.test'</span>);
+  <span class="k">await</span> page.getByTestId(<span class="s">'next-1'</span>).click();
+  <span class="c">// … étapes 2, 3, 4 …</span>
+  <span class="k">await</span> expect(page.getByTestId(<span class="s">'reference'</span>)).toHaveText(<span class="s">/^SIN-\d{4}-\d{6}$/</span>);
+});</code></pre>
+  <ul class="checklist">
+    <li>≥ 5 scénarios : accident auto, cambriolage avec plainte, contrat résilié, erreur de validation, back-office (recherche + changement de statut)</li>
+    <li><code>webServer</code> dans <code>playwright.config.js</code> pour démarrer l'application, fuseau <code>Europe/Paris</code>, locale <code>fr-FR</code></li>
+    <li>Traces / captures conservées en cas d'échec (artefact de CI)</li>
+  </ul>
+
+  <div class="callout tip">
+    <p><strong>Commits attendus</strong> (en plus des tests livrés avec chaque correctif) :
+    <code>test(SF-401): tests unitaires du domaine métier</code> · <code>test(SF-402): tests d'intégration API et base de données</code> ·
+    <code>test(SF-403): tests end-to-end Playwright</code></p>
+  </div>
+</section>
+
+<!-- ================================================================ 10 MISSION 4 -->
+<section class="chap" id="m4">
+  <div class="chap-head"><span class="num">10</span><h2>Mission 4 · Conteneurs &amp; configuration (Lot C)</h2><span class="pill day">Jour 3 · matin</span></div>
+
+  <p class="lede">Thomas lançait l'application avec <code>npm start</code> et utilisait Docker « juste pour la base ». Sur la VM,
+  tout tournera en conteneurs. Objectif : <code>docker compose up -d --build</code> sur une machine neuve doit suffire.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 340" role="img" aria-label="Réseau Docker et piège de localhost">
+      <defs>
+        <marker id="dn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a1a2e"/></marker>
+        <marker id="dr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c62828"/></marker>
+        <marker id="dg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e8e5a"/></marker>
+      </defs>
+      <rect x="10" y="10" width="980" height="320" rx="18" fill="#faf9f5" stroke="#1a1a2e"/>
+      <text x="30" y="38" class="h" font-size="14">Machine hôte (votre PC ou la VM)</text>
+      <rect x="30" y="60" width="160" height="70" rx="12" fill="#fff" stroke="#e7e2da"/>
+      <text x="110" y="90" text-anchor="middle" class="h" font-size="13">curl / navigateur</text>
+      <text x="110" y="110" text-anchor="middle" class="m" font-size="11">localhost:3000</text>
+      <rect x="250" y="56" width="720" height="258" rx="16" fill="#e5effa" stroke="#2563a8" stroke-dasharray="7 5"/>
+      <text x="270" y="82" class="h" font-size="13" fill="#2563a8">réseau Docker « sinistreflow_default » (DNS interne : nom du service → IP)</text>
+      <!-- app container -->
+      <rect x="290" y="104" width="300" height="190" rx="14" fill="#fff" stroke="#c43e00" stroke-width="2"/>
+      <text x="306" y="128" class="h" font-size="13" fill="#9a3000">conteneur « app »</text>
+      <rect x="306" y="144" width="268" height="40" rx="8" fill="#fdeaea"/>
+      <text x="318" y="161" class="m" font-size="11" fill="#c62828">listen('127.0.0.1') : seulement</text>
+      <text x="318" y="176" class="m" font-size="11" fill="#c62828">joignable DEPUIS le conteneur</text>
+      <rect x="306" y="192" width="268" height="40" rx="8" fill="#e3f4ea"/>
+      <text x="318" y="209" class="m" font-size="11" fill="#1e8e5a">listen('0.0.0.0') : joignable par</text>
+      <text x="318" y="224" class="m" font-size="11" fill="#1e8e5a">le port publié 3000:3000</text>
+      <rect x="306" y="240" width="268" height="40" rx="8" fill="#fdeaea"/>
+      <text x="318" y="257" class="m" font-size="11" fill="#c62828">DB_HOST=localhost → le conteneur</text>
+      <text x="318" y="272" class="m" font-size="11" fill="#c62828">app lui-même, pas la base !</text>
+      <!-- db container -->
+      <rect x="680" y="104" width="270" height="190" rx="14" fill="#fff" stroke="#2563a8" stroke-width="2"/>
+      <text x="696" y="128" class="h" font-size="13" fill="#2563a8">conteneur « db »</text>
+      <text x="696" y="152" class="m" font-size="11">postgres:16 · port 5432</text>
+      <text x="696" y="172" class="m" font-size="11">joignable par l'hôte « db »</text>
+      <text x="696" y="192" class="m" font-size="11" fill="#1e8e5a">depuis les autres conteneurs</text>
+      <rect x="696" y="212" width="238" height="64" rx="8" fill="#fff4dc"/>
+      <text x="708" y="232" font-size="11" fill="#8a5a00" class="h">ports: "5432:5432"</text>
+      <text x="708" y="249" font-size="11" fill="#8a5a00">= base ouverte sur toutes les</text>
+      <text x="708" y="265" font-size="11" fill="#8a5a00">interfaces de l'hôte (Internet !)</text>
+      <!-- flèches -->
+      <path d="M190,95 C230,95 240,212 304,212" stroke="#1e8e5a" stroke-width="2.4" fill="none" marker-end="url(#dg)"/>
+      <path d="M190,110 C230,110 250,164 304,164" stroke="#c62828" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#dr)"/>
+      <text x="200" y="150" font-size="10" fill="#c62828" class="h">✗ reset</text>
+      <path d="M574,260 C610,260 640,170 678,170" stroke="#1e8e5a" stroke-width="2.4" fill="none" marker-end="url(#dg)"/>
+      <text x="600" y="300" font-size="11" fill="#1e8e5a" class="h">DB_HOST=db ✓</text>
+    </svg>
+    <figcaption><b>Le piège de <code>localhost</code>.</b> Dans un conteneur, <code>localhost</code> désigne le conteneur lui-même.
+    Un serveur qui n'écoute que sur 127.0.0.1 est invisible de l'extérieur, et un service qui cherche la base sur <code>localhost</code>
+    ne la trouve pas. Entre conteneurs d'un même projet compose, on utilise le <strong>nom du service</strong>.</figcaption>
+  </figure>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 200" role="img" aria-label="Ordre de démarrage compose">
+      <defs>
+        <marker id="cs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a1a2e"/></marker>
+      </defs>
+      <g class="h" font-size="13" text-anchor="middle">
+        <rect x="20" y="50" width="180" height="70" rx="14" fill="#2563a8"/><text x="110" y="80" fill="#fff">db</text><text x="110" y="100" fill="#e5effa" font-size="10">healthcheck : pg_isready</text>
+        <rect x="270" y="50" width="200" height="70" rx="14" fill="#6b43ad"/><text x="370" y="80" fill="#fff">migrate (one-shot)</text><text x="370" y="100" fill="#eee5fa" font-size="10">node src/db/migrate.js → exit 0</text>
+        <rect x="540" y="50" width="180" height="70" rx="14" fill="#c43e00"/><text x="630" y="80" fill="#fff">app</text><text x="630" y="100" fill="#ffdfce" font-size="10">healthcheck : /health/live</text>
+        <rect x="790" y="50" width="190" height="70" rx="14" fill="#1e8e5a"/><text x="885" y="80" fill="#fff">trafic / connecteur</text><text x="885" y="100" fill="#d9f2e4" font-size="10">seulement si /health = 200</text>
+      </g>
+      <g stroke="#1a1a2e" stroke-width="1.8" fill="none" marker-end="url(#cs)">
+        <line x1="200" y1="85" x2="266" y2="85"/><line x1="470" y1="85" x2="536" y2="85"/><line x1="720" y1="85" x2="786" y2="85"/>
+      </g>
+      <g font-size="10.5" fill="#5d5a6b" text-anchor="middle" class="m">
+        <text x="233" y="145">service_healthy</text>
+        <text x="503" y="145">service_completed_</text><text x="503" y="159">successfully</text>
+        <text x="753" y="145">curl /health</text>
+      </g>
+      <text x="500" y="190" text-anchor="middle" font-size="12" fill="#1a1a2e" class="h">depends_on: [db] seul n'attend que le DÉMARRAGE du conteneur, pas que PostgreSQL soit prêt</text>
+    </svg>
+    <figcaption><b>Ordonner le démarrage.</b> Chaque étape attend que la précédente soit réellement prête. Les migrations
+    deviennent une étape du déploiement, plus une commande qu'il faut « penser à lancer » (SF-206).</figcaption>
+  </figure>
+
+  <div class="ticket infra">
+    <header><span class="id">SF-201</span><span class="ttl">Application injoignable dans Docker</span><span class="pill red">Bloquant</span><span class="stars">★★☆</span></header>
+    <blockquote>Conteneur <code>app</code> démarré, logs OK (« SinistreFlow démarré sur http://localhost:3000 »), mais <code>curl http://localhost:3000</code> depuis l'hôte : <em>connection reset / empty reply</em>.</blockquote>
+    <span class="commit">fix(SF-201): écouter sur toutes les interfaces réseau</span>
+    <details class="hint"><summary>Indice</summary><p>Comparez <code>docker compose exec app wget -qO- http://127.0.0.1:3000/health</code> (depuis le conteneur) et le même appel depuis l'hôte. Relisez le schéma ci-dessus.</p></details>
+  </div>
+  <div class="ticket infra">
+    <header><span class="id">SF-202</span><span class="ttl"><code>docker compose up</code> : l'application ne trouve pas la base</span><span class="pill red">Bloquant</span><span class="stars">★★☆</span></header>
+    <blockquote><code>connect ECONNREFUSED 127.0.0.1:5432</code> dans le conteneur <code>app</code>. Au premier démarrage, l'application démarre avant que PostgreSQL soit prêt. L'audit réseau signale que PostgreSQL est joignable depuis l'extérieur.</blockquote>
+    <span class="commit">fix(SF-202): configurer l'hôte de la base et le healthcheck dans docker compose</span>
+    <details class="hint"><summary>Indice</summary><p>Trois problèmes, trois réponses compose : le nom d'hôte d'un service, <code>healthcheck</code> + <code>depends_on.condition</code>, et la différence entre publier un port (<code>ports</code>) et ne pas le publier. En dev, un fichier <code>docker-compose.dev.yml</code> peut publier la base sur <code>127.0.0.1</code> seulement.</p></details>
+  </div>
+  <div class="ticket infra">
+    <header><span class="id">SF-203</span><span class="ttl">Migrations impossibles sur une base neuve</span><span class="pill">Majeur</span><span class="stars">★★☆</span></header>
+    <blockquote><code>npm run migrate</code> sur une base vide : « 10_partners_api_keys.sql : relation "expertises" does not exist ». Sur la base de prod ça passe.</blockquote>
+    <span class="commit">fix(SF-203): trier les migrations par numéro de version</span>
+    <details class="hint"><summary>Indice</summary><p>Console Node : <code>['10_a.sql', '1_b.sql', '2_c.sql'].sort()</code>. Pour reproduire : <code>docker compose exec db createdb -U sinistreflow vide</code> puis <code>DB_NAME=vide npm run migrate</code>. La CI part toujours d'une base vide : ce bug l'aurait bloquée.</p></details>
+  </div>
+  <div class="ticket infra">
+    <header><span class="id">SF-204</span><span class="ttl">Secrets dans le dépôt Git</span><span class="pill red">Sécurité</span><span class="stars">★★☆</span></header>
+    <blockquote>Le mot de passe de la base de production, celui du back-office et la clé API d'ExpertAuto sont lisibles dans le dépôt (et dans tout l'historique Git). Des valeurs par défaut sont aussi codées en dur. — RSSI</blockquote>
+    <span class="commit">fix(SF-204): retirer les secrets du dépôt</span>
+    <details class="hint"><summary>Indice 1</summary><p>Attendus : plus de <code>.env</code> versionné, un <code>.env.example</code> sans valeurs, <code>.gitignore</code> à jour, plus aucun secret par défaut dans <code>src/config.js</code> (en production, une variable manquante doit arrêter l'application), les secrets de la CI dans <em>GitHub Secrets</em>.</p></details>
+    <details class="hint"><summary>Indice 2</summary><p>Supprimer le fichier ne retire pas le secret de l'historique. Un secret qui a été publié est <strong>compromis</strong> : que faut-il faire de ces mots de passe ? Documentez la procédure (et pourquoi la clé du partenaire ne peut pas être changée unilatéralement).</p></details>
+  </div>
+  <div class="ticket infra">
+    <header><span class="id">SF-205</span><span class="ttl">Image Docker de plus d'1 Go, exécutée en root</span><span class="pill">Mineur</span><span class="stars">★★☆</span></header>
+    <blockquote>L'image contient les dépendances de dev, le fichier <code>.env</code>, les tests, le dump de la base… et le process tourne en root.</blockquote>
+    <span class="commit">fix(SF-205): image Docker de production légère et sans root</span>
+    <details class="hint"><summary>Indice</summary><p>Mesurez avant/après : <code>docker images</code>, <code>docker run --rm --entrypoint sh image -c "whoami; ls -a"</code>. Pistes : image de base <em>alpine</em> ou <em>slim</em>, <code>.dockerignore</code>, <code>npm ci --omit=dev</code>, build multi-étapes, <code>USER node</code>, <code>HEALTHCHECK</code>.</p></details>
+  </div>
+  <div class="ticket infra">
+    <header><span class="id">SF-206</span><span class="ttl">Erreur 500 après chaque mise en production</span><span class="pill red">Bloquant</span><span class="stars">★★☆</span></header>
+    <blockquote>Après la dernière livraison : « relation "partners" does not exist ». Personne n'a lancé les migrations. Ça ne doit plus dépendre de la mémoire de quelqu'un.</blockquote>
+    <span class="commit">fix(SF-206): jouer les migrations à chaque déploiement</span>
+    <details class="hint"><summary>Indice</summary><p>Un service compose « one-shot » qui s'exécute avant l'application, ou un script d'entrée du conteneur : comparez les deux. Que se passe-t-il si deux instances de l'application démarrent en même temps et jouent les migrations ?</p></details>
+  </div>
+</section>
+
+<!-- ================================================================ 11 MISSION 5 -->
+<section class="chap" id="m5">
+  <div class="chap-head"><span class="num">11</span><h2>Mission 5 · Intégration continue avec GitHub Actions</h2><span class="pill day">Jour 3 · après-midi</span></div>
+
+  <p class="lede">L'intégration continue (CI), c'est un robot qui, à chaque Pull Request, refait <em>exactement</em> ce que vous devriez
+  faire à la main avant de fusionner : installer, tester à tous les niveaux, construire l'image, et vérifier que le partenaire fonctionne.
+  Si le robot dit non, on ne fusionne pas.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 330" role="img" aria-label="Pipeline GitHub Actions">
+      <defs>
+        <marker id="ci" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a1a2e"/></marker>
+      </defs>
+      <!-- triggers -->
+      <g class="h" font-size="12" text-anchor="middle">
+        <rect x="14" y="70" width="120" height="44" rx="22" fill="#1a1a2e"/><text x="74" y="97" fill="#fff">pull_request</text>
+        <rect x="14" y="200" width="120" height="44" rx="22" fill="#1a1a2e"/><text x="74" y="227" fill="#fff">push main</text>
+      </g>
+      <!-- stage boxes -->
+      <rect x="160" y="20" width="160" height="290" rx="14" fill="#faf9f5" stroke="#e7e2da"/>
+      <rect x="340" y="20" width="200" height="290" rx="14" fill="#faf9f5" stroke="#e7e2da"/>
+      <rect x="560" y="20" width="190" height="290" rx="14" fill="#faf9f5" stroke="#e7e2da"/>
+      <rect x="770" y="20" width="216" height="290" rx="14" fill="#faf9f5" stroke="#e7e2da"/>
+      <g class="h" font-size="11" fill="#5d5a6b" text-anchor="middle">
+        <text x="240" y="42">QUALITÉ RAPIDE</text><text x="440" y="42">TESTS AVEC VRAIE BASE</text><text x="655" y="42">RECETTE PARTENAIRE</text><text x="878" y="42">LIVRAISON (main seulement)</text>
+      </g>
+      <g font-size="12">
+        <rect x="176" y="70" width="128" height="58" rx="10" fill="#fff" stroke="#6b43ad" stroke-width="1.6"/>
+        <text x="190" y="94" class="h" fill="#6b43ad">commits</text><text x="190" y="112" font-size="10" fill="#5d5a6b">format fix(SF-xxx)</text>
+        <rect x="176" y="150" width="128" height="58" rx="10" fill="#fff" stroke="#1e8e5a" stroke-width="1.6"/>
+        <text x="190" y="174" class="h" fill="#1e8e5a">unit</text><text x="190" y="192" font-size="10" fill="#5d5a6b">jest + couverture</text>
+        <rect x="356" y="90" width="168" height="76" rx="10" fill="#fff" stroke="#2563a8" stroke-width="1.6"/>
+        <text x="370" y="114" class="h" fill="#2563a8">integration</text><text x="370" y="132" font-size="10" fill="#5d5a6b">service postgres:16</text><text x="370" y="148" font-size="10" fill="#5d5a6b">restore dump + migrate</text>
+        <rect x="356" y="186" width="168" height="76" rx="10" fill="#fff" stroke="#6b43ad" stroke-width="1.6"/>
+        <text x="370" y="210" class="h" fill="#6b43ad">e2e</text><text x="370" y="228" font-size="10" fill="#5d5a6b">Playwright · chromium</text><text x="370" y="244" font-size="10" fill="#5d5a6b">rapport en artefact</text>
+        <rect x="576" y="130" width="158" height="92" rx="10" fill="#fff1e8" stroke="#c43e00" stroke-width="2"/>
+        <text x="590" y="154" class="h" fill="#9a3000">partner</text><text x="590" y="172" font-size="10" fill="#9a3000">docker compose up --build</text><text x="590" y="188" font-size="10" fill="#9a3000">python3 expertauto_sync.py</text><text x="590" y="204" font-size="10" fill="#9a3000">secret EXPERTAUTO_API_KEY</text>
+        <rect x="786" y="90" width="184" height="66" rx="10" fill="#fff" stroke="#1a1a2e" stroke-width="1.6"/>
+        <text x="800" y="114" class="h">docker</text><text x="800" y="132" font-size="10" fill="#5d5a6b">build + push ghcr.io/…:sha</text><text x="800" y="146" font-size="10" fill="#5d5a6b">scan Trivy (bonus)</text>
+        <rect x="786" y="196" width="184" height="66" rx="10" fill="#fff" stroke="#1a1a2e" stroke-width="1.6" stroke-dasharray="6 4"/>
+        <text x="800" y="220" class="h">deploy (bonus)</text><text x="800" y="238" font-size="10" fill="#5d5a6b">SSH → VM · deploy.sh</text><text x="800" y="252" font-size="10" fill="#5d5a6b">environment: production</text>
+      </g>
+      <g stroke="#1a1a2e" stroke-width="1.5" fill="none" marker-end="url(#ci)">
+        <path d="M134,92 C150,92 156,99 174,99"/><path d="M134,100 C150,100 156,179 174,179"/>
+        <path d="M134,222 C150,222 156,185 174,185"/>
+        <path d="M304,179 C330,179 330,128 354,128"/><path d="M304,179 C330,179 330,224 354,224"/>
+        <path d="M524,128 C550,128 550,170 574,170"/><path d="M524,224 C550,224 550,184 574,184"/>
+        <path d="M734,176 C760,176 760,123 784,123"/>
+        <line x1="878" y1="156" x2="878" y2="194"/>
+      </g>
+      <text x="500" y="300" text-anchor="middle" font-size="12" fill="#1a1a2e" class="h">un job rouge = PR non fusionnable (status checks obligatoires sur main)</text>
+    </svg>
+    <figcaption><b>Le pipeline cible.</b> Les jobs indépendants tournent en parallèle ; les flèches sont des dépendances (<code>needs:</code>).
+    Le job <em>partner</em> lance le connecteur ExpertAuto contre <strong>l'image Docker réellement construite</strong> : c'est la recette du partenaire, automatisée.</figcaption>
+  </figure>
+
+  <h3>Exigences</h3>
+  <ul class="checklist">
+    <li>Fichier <code>.github/workflows/ci.yml</code> déclenché sur <code>pull_request</code> et <code>push</code> sur <code>main</code></li>
+    <li>Jobs <strong>unit</strong>, <strong>integration</strong> (conteneur de service <code>postgres:16</code>, restauration du dump, migrations), <strong>e2e</strong> (Playwright, rapport en artefact si échec)</li>
+    <li>Job <strong>partner</strong> : construit l'image, démarre la stack compose, exécute <code>partner-client/expertauto_sync.py</code> ; la clé est un <em>secret</em> GitHub</li>
+    <li>Job <strong>docker</strong> (sur <code>main</code> uniquement) : image poussée sur GitHub Container Registry, taguée avec le SHA du commit</li>
+    <li>Fuseau <code>TZ: Europe/Paris</code> dans les jobs de test, cache npm, versions d'actions figées (<code>@v4</code>)</li>
+    <li>Protection de <code>main</code> : les jobs unit, integration, e2e et partner sont des <em>required status checks</em></li>
+    <li>Badge de statut du pipeline en haut du <code>README.md</code></li>
+    <li>Bonus : job de vérification des messages de commit, scan de vulnérabilités, job <em>deploy</em> avec environnement protégé</li>
+  </ul>
+
+<pre><code><span class="c"># .github/workflows/ci.yml — point de départ</span>
+name: CI SinistreFlow
+on:
+  pull_request:
+  push:
+    branches: [main]
+env:
+  TZ: Europe/Paris
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run test:unit
+  <span class="c"># integration: à vous (indice : jobs.&lt;id&gt;.services.postgres + psql -f db/dump/…)</span>
+  <span class="c"># e2e, partner, docker : à vous</span></code></pre>
+
+  <div class="callout tip">
+    <p><strong>Commits attendus :</strong> <code>ci(SF-404): pipeline d'intégration continue GitHub Actions</code> ·
+    <code>ci(SF-405): publier l'image Docker sur GHCR</code>. Pour mettre au point le pipeline sans polluer <code>main</code>,
+    travaillez sur une branche et une PR « brouillon », puis regroupez proprement vos commits avant la fusion.</p>
+  </div>
+</section>
+
+<!-- ================================================================ 12 MISSION 6 -->
+<section class="chap" id="m6">
+  <div class="chap-head"><span class="num">12</span><h2>Mission 6 · Déploiement sur une VM</h2><span class="pill day">Jour 4 · matin</span></div>
+
+  <p class="lede">La direction veut savoir si SinistreFlow peut être remonté sur un serveur neuf. Vous partez d'une VM Ubuntu vierge,
+  vous la sécurisez, vous y déployez la stack, vous restaurez la base de production… et vous lancez le connecteur ExpertAuto
+  <strong>depuis la VM</strong>. S'il est vert, la production est rétablie.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 470" role="img" aria-label="Topologie de déploiement">
+      <defs>
+        <marker id="vm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a1a2e"/></marker>
+        <marker id="vmo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c43e00"/></marker>
+      </defs>
+      <!-- internet -->
+      <g font-size="12" class="h" text-anchor="middle">
+        <rect x="14" y="40" width="150" height="54" rx="27" fill="#fff" stroke="#e7e2da"/><text x="89" y="72">🌍 Assurés · HTTP</text>
+        <rect x="14" y="120" width="150" height="54" rx="27" fill="#fff" stroke="#e7e2da"/><text x="89" y="152">🔐 Équipe · SSH</text>
+        <rect x="14" y="200" width="150" height="54" rx="27" fill="#1a1a2e"/><text x="89" y="232" fill="#fff">GitHub Actions</text>
+        <rect x="14" y="280" width="150" height="54" rx="27" fill="#fff" stroke="#e7e2da"/><text x="89" y="304">📦 ghcr.io</text><text x="89" y="320" font-size="10" fill="#5d5a6b">image sinistreflow:sha</text>
+        <rect x="14" y="380" width="150" height="54" rx="27" fill="#fff" stroke="#e7e2da"/><text x="89" y="404">💬 Discord / Slack</text><text x="89" y="420" font-size="10" fill="#5d5a6b">notifications d'alerte</text>
+      </g>
+      <!-- VM -->
+      <rect x="210" y="14" width="776" height="442" rx="18" fill="#faf9f5" stroke="#1a1a2e" stroke-width="2"/>
+      <text x="230" y="40" class="h" font-size="14">VM Ubuntu 24.04 LTS · 2 vCPU · 4 Go</text>
+      <!-- firewall -->
+      <rect x="226" y="54" width="34" height="390" rx="8" fill="#c62828"/>
+      <text x="243" y="250" class="h" font-size="12" fill="#fff" text-anchor="middle" transform="rotate(-90 243 250)">pare-feu ufw : 22 · 80 · 443 uniquement</text>
+      <!-- nginx -->
+      <rect x="290" y="54" width="170" height="96" rx="12" fill="#1e8e5a"/>
+      <text x="375" y="80" text-anchor="middle" class="h" fill="#fff" font-size="13">nginx (hôte)</text>
+      <text x="375" y="98" text-anchor="middle" font-size="10.5" fill="#d9f2e4">:80 / :443 · reverse proxy</text>
+      <text x="375" y="114" text-anchor="middle" font-size="10.5" fill="#d9f2e4">/ → 127.0.0.1:3000</text>
+      <text x="375" y="130" text-anchor="middle" font-size="10.5" fill="#d9f2e4">/grafana/ → 127.0.0.1:3001</text>
+      <text x="375" y="144" text-anchor="middle" font-size="10.5" fill="#ffd9d9">/metrics → 403</text>
+      <!-- cron / partner -->
+      <rect x="290" y="176" width="170" height="80" rx="12" fill="#fff1e8" stroke="#c43e00" stroke-width="2"/>
+      <text x="375" y="200" text-anchor="middle" class="h" fill="#9a3000" font-size="12">connecteur ExpertAuto</text>
+      <text x="375" y="218" text-anchor="middle" font-size="10.5" fill="#9a3000">python3 sur l'hôte · cron horaire</text>
+      <text x="375" y="236" text-anchor="middle" font-size="10.5" fill="#9a3000" class="m">→ http://127.0.0.1:3000</text>
+      <rect x="290" y="282" width="170" height="70" rx="12" fill="#fff" stroke="#e7e2da"/>
+      <text x="375" y="306" text-anchor="middle" class="h" font-size="12">/opt/sinistreflow</text>
+      <text x="375" y="324" text-anchor="middle" font-size="10.5" fill="#5d5a6b">dépôt · .env (chmod 600)</text>
+      <text x="375" y="340" text-anchor="middle" font-size="10.5" fill="#5d5a6b">deploy/deploy.sh</text>
+      <rect x="290" y="372" width="170" height="64" rx="12" fill="#fff" stroke="#e7e2da"/>
+      <text x="375" y="396" text-anchor="middle" class="h" font-size="12">sauvegardes</text>
+      <text x="375" y="414" text-anchor="middle" font-size="10.5" fill="#5d5a6b">pg_dump quotidien (cron)</text>
+      <!-- docker -->
+      <rect x="490" y="54" width="480" height="388" rx="16" fill="#e5effa" stroke="#2563a8" stroke-dasharray="7 5"/>
+      <text x="508" y="78" class="h" font-size="13" fill="#2563a8">Docker Engine · docker compose</text>
+      <g font-size="11.5" class="h" text-anchor="middle">
+        <rect x="508" y="92" width="140" height="58" rx="10" fill="#c43e00"/><text x="578" y="116" fill="#fff">app</text><text x="578" y="134" font-size="10" fill="#ffdfce" class="m">127.0.0.1:3000</text>
+        <rect x="664" y="92" width="140" height="58" rx="10" fill="#6b43ad"/><text x="734" y="116" fill="#fff">migrate</text><text x="734" y="134" font-size="10" fill="#eee5fa">one-shot</text>
+        <rect x="820" y="92" width="136" height="58" rx="10" fill="#2563a8"/><text x="888" y="116" fill="#fff">db</text><text x="888" y="134" font-size="10" fill="#e5effa">non publié · volume</text>
+        <rect x="508" y="196" width="140" height="58" rx="10" fill="#16213e"/><text x="578" y="220" fill="#fff">prometheus</text><text x="578" y="238" font-size="10" fill="#ddd8ea" class="m">127.0.0.1:9090</text>
+        <rect x="664" y="196" width="140" height="58" rx="10" fill="#e65100"/><text x="734" y="220" fill="#fff">grafana</text><text x="734" y="238" font-size="10" fill="#ffdfce" class="m">127.0.0.1:3001</text>
+        <rect x="820" y="196" width="136" height="58" rx="10" fill="#16213e"/><text x="888" y="220" fill="#fff">alertmanager</text><text x="888" y="238" font-size="10" fill="#ddd8ea" class="m">127.0.0.1:9093</text>
+        <rect x="508" y="300" width="108" height="50" rx="10" fill="#fff" stroke="#16213e"/><text x="562" y="322">node-</text><text x="562" y="338">exporter</text>
+        <rect x="626" y="300" width="108" height="50" rx="10" fill="#fff" stroke="#16213e"/><text x="680" y="322">postgres-</text><text x="680" y="338">exporter</text>
+        <rect x="744" y="300" width="100" height="50" rx="10" fill="#fff" stroke="#16213e"/><text x="794" y="330">cadvisor</text>
+        <rect x="854" y="300" width="102" height="50" rx="10" fill="#fff" stroke="#16213e"/><text x="905" y="330">blackbox</text>
+      </g>
+      <text x="730" y="384" text-anchor="middle" font-size="11" fill="#2563a8">Seul nginx est joignable depuis Internet. Tous les ports Docker sont liés à 127.0.0.1</text>
+      <text x="730" y="400" text-anchor="middle" font-size="11" fill="#2563a8">ou pas publiés du tout. Prometheus / Alertmanager : tunnel SSH (ssh -L 9090:127.0.0.1:9090).</text>
+      <!-- flèches -->
+      <g stroke="#1a1a2e" stroke-width="1.6" fill="none" marker-end="url(#vm)">
+        <path d="M164,67 C220,67 230,90 288,90"/>
+        <path d="M164,147 C220,147 230,316 288,316"/>
+        <path d="M164,227 C200,227 210,330 288,330" stroke-dasharray="5 4"/>
+        <path d="M460,100 C480,100 490,121 506,121"/>
+        <path d="M460,138 C485,138 640,170 700,198"/>
+        <path d="M648,121 C700,121 760,121 818,121" stroke="#2563a8"/>
+        <path d="M89,280 C89,262 200,262 286,300" stroke-dasharray="5 4"/>
+        <path d="M820,254 C700,280 300,420 166,407"/>
+      </g>
+      <path d="M460,214 C490,214 495,140 506,140" stroke="#c43e00" stroke-width="2.4" fill="none" marker-end="url(#vmo)"/>
+    </svg>
+    <figcaption><b>La topologie cible.</b> Le principe de moindre exposition : un seul point d'entrée public (nginx), la base et la supervision
+    invisibles depuis Internet, le connecteur partenaire qui appelle l'application en local. Le déploiement continu depuis GitHub Actions est un bonus.</figcaption>
+  </figure>
+
+  <h3>Étapes</h3>
+  <ol class="steps">
+    <li><strong>Obtenir la VM.</strong> Fournie par le formateur, ou créée par vos soins (cloud, VirtualBox, Multipass) : Ubuntu 24.04 LTS, 2 vCPU, 4 Go de RAM, 20 Go de disque.</li>
+    <li><strong>Sécuriser l'accès.</strong> Connexion par clé SSH uniquement, utilisateur dédié <code>deploy</code> (groupe <code>docker</code>), <code>PermitRootLogin no</code>, <code>PasswordAuthentication no</code>, fail2ban, mises à jour de sécurité automatiques.</li>
+    <li><strong>Pare-feu.</strong> <code>ufw default deny incoming</code>, puis n'ouvrir que 22, 80, 443. Vérifiez depuis votre poste avec <code>nc -zv &lt;ip&gt; 5432</code> que la base est fermée.</li>
+    <li><strong>Installer Docker</strong> Engine et le plugin compose depuis le dépôt officiel Docker.</li>
+    <li><strong>Configurer.</strong> Code dans <code>/opt/sinistreflow</code> (clé de déploiement GitHub en lecture seule, ou image GHCR), <code>.env</code> de production avec des secrets <strong>neufs</strong> (<code>openssl rand -base64 24</code>), <code>chmod 600 .env</code>.</li>
+    <li><strong>Première mise en service.</strong> Démarrer la base, restaurer le dump, démarrer la stack (les migrations jouent toutes seules), vérifier <code>/health</code>.</li>
+    <li><strong>Reverse proxy</strong> nginx devant l'application, <code>/metrics</code> bloqué. Bonus : HTTPS avec certbot si vous disposez d'un nom de domaine.</li>
+    <li><strong>Le moment de vérité.</strong> Depuis la VM :
+<pre><code>cd /opt/sinistreflow
+SINISTREFLOW_URL=http://127.0.0.1:3000 EXPERTAUTO_API_KEY=… python3 partner-client/expertauto_sync.py
+<span class="c"># SYNCHRONISATION CONFORME : 25/25 contrôles OK   ← capture d'écran dans le journal</span></code></pre></li>
+    <li><strong>Automatiser.</strong> Scripts versionnés : <code>deploy/provision-vm.sh</code> (étapes 2 à 4), <code>deploy/deploy.sh</code> (pull de l'image, migrations, démarrage, attente de <code>/health</code>, connecteur, <strong>retour arrière automatique</strong> sur l'image précédente si échec), et <code>docs/RUNBOOK.md</code> (comment déployer, restaurer, réagir à chaque alerte).</li>
+  </ol>
+
+  <div class="grid2">
+    <div class="callout warn">
+      <p><strong>Retour arrière et migrations.</strong> Revenir à l'image précédente ne « dé-migre » pas la base. Une migration doit donc
+      rester compatible avec la version N-1 du code : on ajoute une colonne, on ne la renomme ni ne la supprime dans la même livraison
+      (stratégie <em>expand / contract</em>). C'est d'ailleurs ce qu'avait fait la migration 8… à moitié.</p>
+    </div>
+    <div class="callout info">
+      <p><strong>Le connecteur consomme des données.</strong> Chaque exécution réussie fait passer un dossier en <code>EXPERTISE_TERMINEE</code>
+      (10 dossiers auto disponibles dans le dump). Pour rejouer à volonté sur la VM : <code>bash db/restore.sh</code> puis
+      <code>docker compose run --rm migrate</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <p><strong>Commits attendus :</strong> <code>feat(SF-601): script de provisionnement de la VM</code> ·
+    <code>feat(SF-602): script de déploiement avec retour arrière</code> · <code>docs(SF-604): runbook d'exploitation</code></p>
+  </div>
+</section>
+
+<!-- ================================================================ 13 MISSION 7 -->
+<section class="chap" id="m7">
+  <div class="chap-head"><span class="num">13</span><h2>Mission 7 · Supervision</h2><span class="pill day">Jour 4 · après-midi</span></div>
+
+  <p class="lede">Le 14 septembre, la base est tombée et personne ne l'a su pendant 3 heures. Objectif : que l'équipe soit
+  <strong>prévenue avant les utilisateurs</strong>, et qu'elle puisse comprendre ce qui se passe en un coup d'œil.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 1000 380" role="img" aria-label="Chaîne de supervision">
+      <defs>
+        <marker id="mo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a1a2e"/></marker>
+        <marker id="moo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c43e00"/></marker>
+      </defs>
+      <text x="120" y="30" text-anchor="middle" class="h" font-size="12" fill="#5d5a6b">SOURCES (exposent /metrics)</text>
+      <text x="500" y="30" text-anchor="middle" class="h" font-size="12" fill="#5d5a6b">COLLECTE &amp; RÈGLES</text>
+      <text x="860" y="30" text-anchor="middle" class="h" font-size="12" fill="#5d5a6b">EXPLOITATION</text>
+      <g font-size="12">
+        <rect x="14" y="46" width="220" height="56" rx="10" fill="#c43e00"/><text x="28" y="70" class="h" fill="#fff">app · /metrics (prom-client)</text><text x="28" y="88" font-size="10" fill="#ffdfce">RED + métier + pool DB</text>
+        <rect x="14" y="112" width="220" height="48" rx="10" fill="#fff" stroke="#16213e"/><text x="28" y="134" class="h">node-exporter</text><text x="28" y="150" font-size="10" fill="#5d5a6b">CPU · RAM · disque de la VM (USE)</text>
+        <rect x="14" y="170" width="220" height="48" rx="10" fill="#fff" stroke="#16213e"/><text x="28" y="192" class="h">postgres-exporter</text><text x="28" y="208" font-size="10" fill="#5d5a6b">pg_up · connexions · taille</text>
+        <rect x="14" y="228" width="220" height="48" rx="10" fill="#fff" stroke="#16213e"/><text x="28" y="250" class="h">cadvisor</text><text x="28" y="266" font-size="10" fill="#5d5a6b">ressources par conteneur</text>
+        <rect x="14" y="286" width="220" height="48" rx="10" fill="#fff" stroke="#16213e"/><text x="28" y="308" class="h">blackbox-exporter</text><text x="28" y="324" font-size="10" fill="#5d5a6b">sonde HTTP /health (vue client)</text>
+      </g>
+      <rect x="380" y="110" width="240" height="160" rx="16" fill="#16213e"/>
+      <text x="500" y="146" text-anchor="middle" class="h" fill="#fff" font-size="17">Prometheus</text>
+      <text x="500" y="170" text-anchor="middle" fill="#ddd8ea" font-size="11">scrape toutes les 15 s (modèle PULL)</text>
+      <text x="500" y="188" text-anchor="middle" fill="#ddd8ea" font-size="11">base de séries temporelles · PromQL</text>
+      <rect x="400" y="204" width="200" height="50" rx="8" fill="#c43e00"/>
+      <text x="500" y="226" text-anchor="middle" class="h" fill="#fff" font-size="12">alerts.yml</text>
+      <text x="500" y="243" text-anchor="middle" fill="#ffdfce" font-size="10">expr + for: 5m + severity</text>
+      <rect x="740" y="60" width="240" height="96" rx="14" fill="#e65100"/>
+      <text x="860" y="92" text-anchor="middle" class="h" fill="#fff" font-size="15">Grafana</text>
+      <text x="860" y="114" text-anchor="middle" fill="#ffdfce" font-size="11">tableaux de bord « as code »</text>
+      <text x="860" y="132" text-anchor="middle" fill="#ffdfce" font-size="11">(datasource + JSON provisionnés)</text>
+      <rect x="740" y="200" width="240" height="70" rx="14" fill="#1a1a2e"/>
+      <text x="860" y="228" text-anchor="middle" class="h" fill="#fff" font-size="14">Alertmanager</text>
+      <text x="860" y="250" text-anchor="middle" fill="#ddd8ea" font-size="11">regroupe · inhibe · route</text>
+      <rect x="770" y="300" width="180" height="50" rx="25" fill="#fff" stroke="#e7e2da"/>
+      <text x="860" y="330" text-anchor="middle" class="h" font-size="12">💬 #sinistreflow-alertes</text>
+      <g stroke="#1a1a2e" stroke-width="1.5" fill="none" marker-end="url(#mo)">
+        <path d="M378,140 C320,140 300,74 236,74" /><path d="M378,150 C320,150 300,136 236,136"/>
+        <path d="M378,170 C320,170 300,194 236,194"/><path d="M378,190 C320,190 300,252 236,252"/>
+        <path d="M378,210 C320,210 300,310 236,310"/>
+        <path d="M740,108 C680,108 680,150 622,150"/>
+        <line x1="860" y1="270" x2="860" y2="298"/>
+      </g>
+      <path d="M600,229 C660,229 680,235 738,235" stroke="#c43e00" stroke-width="2.4" fill="none" marker-end="url(#moo)"/>
+      <text x="300" y="360" text-anchor="middle" font-size="11" fill="#5d5a6b">les flèches partent de Prometheus : c'est lui qui vient chercher les métriques</text>
+      <text x="700" y="290" font-size="10" fill="#9a3000" class="h">alerte active</text>
+      <text x="690" y="100" font-size="10" fill="#5d5a6b">requêtes PromQL</text>
+    </svg>
+    <figcaption><b>La chaîne de supervision.</b> Prometheus <em>interroge</em> régulièrement chaque source (modèle « pull »), stocke les séries
+    temporelles et évalue les règles d'alerte. Grafana affiche, Alertmanager prévient. Tout est configuré par fichiers versionnés.</figcaption>
+  </figure>
+
+  <h3>Que mesurer ?</h3>
+  <div class="grid3">
+    <div class="card">
+      <h4>Les 4 signaux d'or</h4>
+      <p><strong>Latence</strong> (combien de temps), <strong>trafic</strong> (combien de requêtes), <strong>erreurs</strong> (combien échouent),
+      <strong>saturation</strong> (à quel point on est plein). Issus du livre <em>Site Reliability Engineering</em> de Google.</p>
+    </div>
+    <div class="card">
+      <h4>RED pour les services</h4>
+      <p><strong>R</strong>ate, <strong>E</strong>rrors, <strong>D</strong>uration : pour chaque route de l'API. Un compteur de requêtes
+      étiqueté par code HTTP et un histogramme de durées suffisent à tout calculer.</p>
+    </div>
+    <div class="card">
+      <h4>USE pour les ressources</h4>
+      <p><strong>U</strong>tilization, <strong>S</strong>aturation, <strong>E</strong>rrors : CPU, mémoire, disque, connexions à la base.
+      Fourni par les exporters, sans code.</p>
+    </div>
+  </div>
+
+  <div class="tablewrap"><table>
+    <tr><th>Type</th><th>Comportement</th><th>Exemple SinistreFlow</th><th>Requête PromQL typique</th></tr>
+    <tr><td><b>Counter</b></td><td>ne fait que monter</td><td><code>sinistreflow_http_requests_total{route,status}</code></td><td><code>sum by (status) (rate(…[5m]))</code></td></tr>
+    <tr><td><b>Gauge</b></td><td>monte et descend</td><td><code>sinistreflow_db_pool_connections{state}</code></td><td><code>max_over_time(…[10m])</code></td></tr>
+    <tr><td><b>Histogram</b></td><td>répartition par tranches</td><td><code>sinistreflow_http_request_duration_seconds</code></td><td><code>histogram_quantile(0.95, sum by (le) (rate(…_bucket[5m])))</code></td></tr>
+  </table></div>
+
+  <div class="callout warn">
+    <p><strong>Attention à la cardinalité.</strong> Une étiquette <code>route="/api/v2/claims/SIN-2026-000450"</code> crée une série par dossier :
+    Prometheus explose. On étiquette avec le <em>motif</em> de la route (<code>/api/v2/claims/:reference</code>), jamais avec un identifiant.</p>
+  </div>
+
+  <h3>Exigences</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Livrable</th><th>Contenu minimal</th><th>Commit</th></tr>
+    <tr><td>Métriques applicatives</td><td><code>GET /metrics</code> (prom-client) : compteur et histogramme HTTP par méthode / route / statut, métriques par défaut Node.js, état du pool PostgreSQL, et <strong>au moins 2 métriques métier</strong> (déclarations par type, expertises déposées, appels par version d'API et partenaire…)</td><td><code>feat(SF-501): exposer les métriques Prometheus sur /metrics</code></td></tr>
+    <tr><td>Stack de supervision</td><td>Fichier compose dédié : Prometheus, Grafana (datasource + tableau de bord <strong>provisionnés par fichiers</strong>), node-exporter, postgres-exporter. Rien d'exposé publiquement sauf Grafana derrière nginx (ou tunnel SSH).</td><td><code>feat(SF-502): ajouter la stack Prometheus et Grafana</code></td></tr>
+    <tr><td>Tableau de bord</td><td>État app / base / sonde, req/s, % d'erreurs 5xx, latence p95, déclarations et expertises (24 h), usage des versions d'API, CPU / RAM / disque de la VM</td><td>(dans SF-502)</td></tr>
+    <tr><td>Alertes</td><td>≥ 5 règles avec <code>for:</code> et <code>severity</code> : application injoignable, <code>/health</code> en échec ou base injoignable, taux de 5xx &gt; 5 %, latence p95 &gt; 1 s, disque &lt; 10 %. Alertmanager → Discord, Slack ou e-mail.</td><td><code>feat(SF-503): ajouter les règles d'alerte</code></td></tr>
+    <tr><td>Journaux</td><td>Logs JSON une ligne par événement (horodatage, niveau, route, statut, durée, partenaire), erreurs 5xx avec stack <em>dans les logs</em> (pas dans la réponse). Bonus : Loki.</td><td><code>feat(SF-504): produire des journaux structurés JSON</code></td></tr>
+  </table></div>
+
+  <h3>Le test de panne (« game day »)</h3>
+  <p>Une supervision qui n'a jamais sonné est une supervision dont on ne sait pas si elle marche. Sur la VM :</p>
+  <ol class="steps">
+    <li><strong>Panne de base.</strong> <code>docker compose stop db</code>. Chronométrez : combien de temps avant que <code>/health</code> passe en 503, que l'alerte passe en <em>firing</em>, que la notification arrive ? Redémarrez, mesurez le temps de retour à la normale.</li>
+    <li><strong>Pluie d'erreurs.</strong> Une boucle de 200 appels avec une mauvaise clé API : quelle alerte, quel panneau le montre ?</li>
+    <li><strong>Mauvaise livraison.</strong> Déployez volontairement une image cassée (variable obligatoire manquante, par exemple) : <code>deploy.sh</code> doit revenir seul à la version précédente.</li>
+    <li><strong>Post-mortem.</strong> Pour chaque scénario, dans <code>docs/JOURNAL.md</code> : chronologie, captures Grafana / notification, temps de détection, temps de résolution, ce qu'il faudrait améliorer. Captures dans <code>docs/preuves/</code>.</li>
+  </ol>
+</section>
+
+<!-- ================================================================ 14 RENDU -->
+<section class="chap" id="recette">
+  <div class="chap-head"><span class="num">14</span><h2>Rendu</h2><span class="pill day">Jour 4 · fin de journée</span></div>
+
+  <p class="lede">Le rendu, c'est <strong>votre dépôt GitHub, et rien d'autre</strong>. Envoyez son lien au formateur
+  (dépôt privé, formateur invité). La note est établie uniquement à partir de ce que contient le dépôt :
+  ce qui n'y est pas n'existe pas.</p>
+
+  <div class="grid3">
+    <div class="card">
+      <h4>🗂️ L'historique Git</h4>
+      <p>Les commits au message exact, les branches, les Pull Requests relues, la répartition du travail entre les membres.
+      L'historique est vérifié automatiquement.</p>
+    </div>
+    <div class="card">
+      <h4>⚙️ Le pipeline</h4>
+      <p>L'onglet <em>Actions</em> doit montrer un pipeline vert sur <code>main</code>, recette du connecteur ExpertAuto comprise.
+      Le formateur peut relancer le pipeline à tout moment.</p>
+    </div>
+    <div class="card">
+      <h4>📸 Les preuves</h4>
+      <p>Ce qui ne se voit pas dans le code se prouve dans <code>docs/preuves/</code> : sortie du connecteur au vert <strong>sur la VM</strong>,
+      tableau de bord Grafana, alerte reçue, captures du game day, sortie de <code>ufw status</code>.</p>
+    </div>
+  </div>
+
+  <h3>Check-list de fin de TP</h3>
+  <ul class="checklist">
+    <li>22 commits de correction au message exact, chacun avec son test</li>
+    <li>ADR <code>docs/adr/0001-versioning-api.md</code></li>
+    <li>Tests unitaires, d'intégration et E2E, lancés par la CI</li>
+    <li>Pipeline GitHub Actions vert sur <code>main</code>, <code>main</code> protégée par les status checks</li>
+    <li>Image publiée sur GHCR</li>
+    <li>VM sécurisée, stack déployée, base restaurée, connecteur ExpertAuto vert <strong>depuis la VM</strong></li>
+    <li>Grafana avec tableau de bord, alertes testées, notification reçue</li>
+    <li><code>docs/RUNBOOK.md</code>, <code>docs/JOURNAL.md</code>, <code>docs/CARTOGRAPHIE.md</code></li>
+    <li>Captures et sorties dans <code>docs/preuves/</code></li>
+    <li>Aucun secret dans le dépôt (<code>git grep -i password</code> ne renvoie rien de sensible)</li>
+    <li>Lien du dépôt envoyé au formateur</li>
+  </ul>
+</section>
+
+<!-- ================================================================ 15 BAREME -->
+<section class="chap" id="bareme">
+  <div class="chap-head"><span class="num">15</span><h2>Barème</h2></div>
+  <div class="tablewrap"><table>
+    <tr><th>Domaine</th><th>Critères</th><th>Points</th></tr>
+    <tr><td>Corrections (lots A, B, C)</td><td>22 tickets : correctif juste, commit au message exact, test qui échouait avant et passe après</td><td><b>30</b></td></tr>
+    <tr><td>Versioning (SF-109)</td><td>ADR argumentée sur des faits, correctif cohérent avec la décision, tests de contrat par version</td><td><b>10</b></td></tr>
+    <tr><td>Tests</td><td>Unitaires (5) · intégration sur la vraie base (5) · End-to-End Playwright (5)</td><td><b>15</b></td></tr>
+    <tr><td>Intégration continue</td><td>Pipeline complet, recette partenaire automatisée, image GHCR, protection de branche</td><td><b>10</b></td></tr>
+    <tr><td>Conteneurs</td><td>Image légère et sans root, compose ordonné (healthchecks, migrations), aucun port superflu</td><td><b>5</b></td></tr>
+    <tr><td>Déploiement</td><td>VM sécurisée, scripts versionnés, retour arrière, connecteur vert depuis la VM, runbook</td><td><b>10</b></td></tr>
+    <tr><td>Supervision</td><td>Métriques applicatives et métier, tableau de bord, alertes, game day documenté</td><td><b>10</b></td></tr>
+    <tr><td>Pratiques Git &amp; équipe</td><td>Branches, PR relues, journal de bord, répartition du travail visible dans l'historique</td><td><b>5</b></td></tr>
+    <tr><td>Documentation &amp; preuves</td><td>README à jour (badge CI, lancement), runbook, journal, captures dans <code>docs/preuves/</code></td><td><b>5</b></td></tr>
+    <tr><td colspan="2"><b>Total</b> — note établie uniquement à partir du dépôt GitHub rendu</td><td><b>100</b></td></tr>
+  </table></div>
+</section>
+
+<!-- ================================================================ 16 ANNEXES -->
+<section class="chap" id="annexes">
+  <div class="chap-head"><span class="num">16</span><h2>Annexes</h2></div>
+
+  <h3>Commandes utiles</h3>
+  <div class="grid2">
+<pre><code><span class="c"># --- Git</span>
+git switch -c fix/SF-107-pagination
+git add -p                       <span class="c"># ajouter morceau par morceau</span>
+git commit -m "fix(SF-107): corriger le calcul de l'offset de pagination"
+git log --oneline --grep "SF-"
+git bisect start / good / bad    <span class="c"># trouver le commit fautif</span>
+
+<span class="c"># --- PostgreSQL</span>
+docker compose exec db psql -U sinistreflow
+\dt   \d claims   \x
+SELECT status, count(*) FROM claims GROUP BY 1;
+SELECT * FROM schema_migrations;</code></pre>
+<pre><code><span class="c"># --- Docker</span>
+docker compose up -d --build
+docker compose ps
+docker compose logs -f app
+docker compose exec app sh
+docker compose run --rm migrate
+docker images | grep sinistreflow
+docker system df
+
+<span class="c"># --- HTTP</span>
+curl -s -H "X-API-Key: $KEY" localhost:3000/api/v1/claims?limit=2 | jq
+curl -si localhost:3000/health</code></pre>
+  </div>
+
+  <h3>Glossaire</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Terme</th><th>Définition</th></tr>
+    <tr><td>CI / CD</td><td>Intégration continue (tester automatiquement chaque changement) / livraison ou déploiement continu (le mettre en production automatiquement).</td></tr>
+    <tr><td>ADR</td><td>Architecture Decision Record : document court qui trace une décision d'architecture, son contexte et ses conséquences.</td></tr>
+    <tr><td>Migration</td><td>Script versionné qui fait évoluer le schéma de la base. Toujours rejoué dans l'ordre, une seule fois.</td></tr>
+    <tr><td>Changement cassant</td><td>Modification d'une interface publique qui peut faire échouer un client existant.</td></tr>
+    <tr><td>Healthcheck · liveness · readiness</td><td>Sonde de santé. <em>Liveness</em> : le process vit-il ? <em>Readiness</em> : peut-il servir des requêtes (base joignable) ?</td></tr>
+    <tr><td>Reverse proxy</td><td>Serveur frontal (nginx) qui reçoit le trafic public et le relaie vers les applications internes.</td></tr>
+    <tr><td>Exporter</td><td>Petit programme qui expose au format Prometheus les métriques d'un système qui ne le fait pas lui-même.</td></tr>
+    <tr><td>SLO</td><td>Objectif de niveau de service, ex. « 99,5 % des déclarations aboutissent en moins d'une seconde sur 30 jours ».</td></tr>
+    <tr><td>Post-mortem</td><td>Analyse sans recherche de coupable d'un incident : chronologie, causes, actions d'amélioration.</td></tr>
+  </table></div>
+
+  <h3>Ressources officielles</h3>
+  <ul>
+    <li><a href="https://docs.github.com/fr/actions">GitHub Actions</a> · <a href="https://docs.docker.com/compose/">Docker Compose</a> · <a href="https://docs.docker.com/build/building/best-practices/">Bonnes pratiques Dockerfile</a></li>
+    <li><a href="https://jestjs.io/fr/">Jest</a> · <a href="https://github.com/ladjs/supertest">Supertest</a> · <a href="https://playwright.dev/docs/intro">Playwright</a></li>
+    <li><a href="https://node-postgres.com/">node-postgres</a> · <a href="https://www.postgresql.org/docs/16/">PostgreSQL 16</a></li>
+    <li><a href="https://prometheus.io/docs/">Prometheus</a> · <a href="https://grafana.com/docs/grafana/latest/">Grafana</a> · <a href="https://github.com/siimon/prom-client">prom-client</a></li>
+    <li><a href="https://sre.google/sre-book/monitoring-distributed-systems/">Google SRE : Monitoring Distributed Systems</a> · <a href="https://dora.dev/">DORA</a> · <a href="https://adr.github.io/">ADR</a></li>
+  </ul>
+</section>
+
+<footer class="end">
+  <img src="assets/logo-it-akademy.png" alt="IT-Akademy">
+  IT-Akademy · Module DevOps · TP « SinistreFlow » · MutuAlp Assurances est une entreprise fictive, toutes les données sont générées.<br>
+  <em>Apprenez la tech. Construisez votre avenir.</em>
+</footer>
+</main>
+</div>
+</body>
+</html>

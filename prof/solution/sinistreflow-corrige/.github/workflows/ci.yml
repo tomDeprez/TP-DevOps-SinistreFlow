@@ -1,0 +1,202 @@
+name: CI/CD SinistreFlow
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 22
+  TZ: Europe/Paris               # même fuseau que la production (SF-111)
+  DB_HOST_TEST: localhost
+  DB_PASSWORD: ci-password
+  DUMP: db/dump/sinistreflow_prod_2026-09-28.sql
+
+jobs:
+  # ------------------------------------------------------------------ qualité
+  commits:
+    name: Convention des messages de commit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Vérifier les messages (type(SF-xxx): description)
+        run: |
+          status=0
+          while read -r msg; do
+            if ! echo "$msg" | grep -Eq '^(fix|feat|test|ci|docs|chore|refactor|perf|build)(\((SF-[0-9]{3}|[a-z-]+)\))?: .{5,}$|^Merge '; then
+              echo "::error::Message de commit non conforme : $msg"
+              status=1
+            fi
+          done < <(git log --format=%s origin/${{ github.base_ref }}..HEAD)
+          exit $status
+
+  unit:
+    name: Tests unitaires
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+
+  # ------------------------------------------------- tests avec vraie base
+  integration:
+    name: Tests d'intégration (PostgreSQL + dump de prod)
+    needs: unit
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sinistreflow
+          POSTGRES_PASSWORD: ci-password
+          POSTGRES_DB: sinistreflow
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sinistreflow" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Restaurer la base de production anonymisée
+        run: PGPASSWORD=$DB_PASSWORD psql -h localhost -U sinistreflow -d sinistreflow -v ON_ERROR_STOP=1 -q -f "$DUMP" > /dev/null
+      - name: Appliquer les migrations en attente
+        run: DB_HOST=localhost npm run migrate
+      - run: npm run test:integration
+
+  e2e:
+    name: Tests End-to-End (Playwright)
+    needs: unit
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sinistreflow
+          POSTGRES_PASSWORD: ci-password
+          POSTGRES_DB: sinistreflow
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sinistreflow" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: PGPASSWORD=$DB_PASSWORD psql -h localhost -U sinistreflow -d sinistreflow -v ON_ERROR_STOP=1 -q -f "$DUMP" > /dev/null
+      - run: DB_HOST=localhost npm run migrate
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+
+  # --------------------------------------- recette du partenaire externe
+  partner:
+    name: Recette connecteur ExpertAuto (image Docker réelle)
+    needs: [integration, e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Préparer l'environnement
+        run: |
+          cp .env.example .env
+          sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=ci-password/; s/^BACKOFFICE_PASSWORD=.*/BACKOFFICE_PASSWORD=ci-bo/" .env
+      - name: Démarrer la base et restaurer le dump
+        run: |
+          docker compose up -d db
+          until docker compose exec -T db pg_isready -U sinistreflow; do sleep 2; done
+          bash db/restore.sh
+      - name: Construire et démarrer l'application (migrations comprises)
+        run: |
+          docker compose up -d --build --wait app
+          curl -fsS http://localhost:3000/health
+      - name: Lancer le connecteur ExpertAuto (non modifiable)
+        env:
+          SINISTREFLOW_URL: http://localhost:3000
+          EXPERTAUTO_API_KEY: ${{ secrets.EXPERTAUTO_API_KEY }}
+          EXPERTAUTO_REPORT: expertauto-report.json
+        run: python3 partner-client/expertauto_sync.py
+      - name: Logs applicatifs
+        if: failure()
+        run: docker compose logs app migrate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: expertauto-report
+          path: expertauto-report.json
+
+  # ------------------------------------------------------- livraison
+  docker:
+    name: Image Docker -> GHCR
+    needs: [partner]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ghcr.io/${{ github.repository }}:latest
+      - name: Scan de vulnérabilités (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ steps.meta.outputs.image }}
+          severity: CRITICAL
+          exit-code: '0'
+
+  deploy:
+    name: Déploiement sur la VM
+    needs: docker
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - name: Déployer via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            bash /opt/sinistreflow/deploy/deploy.sh "${{ needs.docker.outputs.image }}"
